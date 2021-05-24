@@ -160,6 +160,7 @@ def get_precise_sv(sv_df, chrom_5p=None, start_5p=None, end_5p=None,
             res_df = res_df.loc[lambda row: row.pos_3p >= start_3p]
         if end_3p:
             res_df = res_df.loc[lambda row: row.pos_3p <= end_3p]
+    return res_df
 
 def get_breakpoints(sv_5p, sv_3p):
     return sorted(set(sv_5p.pos_5p).union(sv_3p.pos_3p))

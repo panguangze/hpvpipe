@@ -1,21 +1,22 @@
+import pandas as pd
+import re
+import numpy as np
 import bpsmap
 import os
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 
-import numpy as np
-import pandas as pd
 
 def map_bps_junc(junc, bps_map):
     for i in junc.index:
-        # print(junc.loc[i])
         junc.at[i, 'pos_5p'] = bps_map.loc[lambda df: df.chrom == junc.loc[i, 'chrom_5p']]\
-                                    .loc[lambda df: df.before == junc.loc[i, 'pos_5p']]\
-                                    .iloc[0].after
+            .loc[lambda df: df.before == junc.loc[i, 'pos_5p']]\
+            .iloc[0].after
         junc.at[i, 'pos_3p'] = bps_map.loc[lambda df: df.chrom == junc.loc[i, 'chrom_3p']]\
-                                    .loc[lambda df: df.before == junc.loc[i, 'pos_3p']]\
-                                    .iloc[0].after
+            .loc[lambda df: df.before == junc.loc[i, 'pos_3p']]\
+            .iloc[0].after
+
 
 def map_bps_chrom_infos(chrom_infos, bps_map):
     for i in chrom_infos.index:
@@ -26,9 +27,11 @@ def map_bps_chrom_infos(chrom_infos, bps_map):
                                           .loc[lambda df: df.before == chrom_infos.loc[i, 'end']]\
                                           .iloc[0].after
 
+
 def map_bps_sv(sv, bps_map):
     for i in sv.index:
-        t=bps_map.loc[lambda df: df.chrom == sv.loc[i, 'chrom_5p']].loc[lambda df: df.before == sv.loc[i, 'pos_5p']]
+        t = bps_map.loc[lambda df: df.chrom == sv.loc[i, 'chrom_5p']
+                        ].loc[lambda df: df.before == sv.loc[i, 'pos_5p']]
         sv.at[i, 'pos_5p'] = bps_map.loc[lambda df: df.chrom == sv.loc[i, 'chrom_5p']]\
                                     .loc[lambda df: df.before == sv.loc[i, 'pos_5p']]\
                                     .iloc[0].after
@@ -36,13 +39,17 @@ def map_bps_sv(sv, bps_map):
                                     .loc[lambda df: df.before == sv.loc[i, 'pos_3p']]\
                                     .iloc[0].after
 
+
 def dedup(sv):
     sv = sv.sort_values(by=sv.columns[:-1].tolist())
     return sv[~sv.duplicated(sv.columns[:6], keep='last')]
 
-def segmentation(sv, chrom, start, end, id_start=1, drop_imprecise=True, drop_insertions=True):
-    sv_5p = bpsmap.get_precise_sv(sv, chrom_5p=chrom, drop_imprecise=drop_imprecise, drop_insertions=drop_insertions)
-    sv_3p = bpsmap.get_precise_sv(sv, chrom_3p=chrom, drop_imprecise=drop_imprecise, drop_insertions=drop_insertions)
+
+def segmentation(sv, chrom, start, end, id_start=1):
+    sv_5p = bpsmap.get_precise_sv(
+        sv, chrom_5p=chrom, start_5p=start, end_5p=end)
+    sv_3p = bpsmap.get_precise_sv(
+        sv, chrom_3p=chrom, start_3p=start, end_3p=end)
     bps = sorted(set(bpsmap.get_breakpoints(sv_5p, sv_3p) + [start, end]))
 
     segs = []
@@ -52,6 +59,7 @@ def segmentation(sv, chrom, start, end, id_start=1, drop_imprecise=True, drop_in
         id_start += 1
     segs.append((id_start, chrom, start, end))
     return pd.DataFrame(segs, columns=['ID', 'chrom', 'start', 'end']), id_start + 1
+
 
 def update_junc_db_by_sv(sv, junc_db):
     for row in sv.itertuples():
@@ -78,6 +86,7 @@ def update_junc_db_by_sv(sv, junc_db):
                 junc_db.at[idx1[0], 'count'] += 1
     return junc_db
 
+
 def get_normal_junc_read_num(bam, chrom, pos, ext=5):
     n = 0
     for r in bam.fetch(chrom, pos - 1, pos):
@@ -85,6 +94,7 @@ def get_normal_junc_read_num(bam, chrom, pos, ext=5):
         if overlapped == pos + ext - (pos - 1 - ext):
             n += 1
     return n
+
 
 def update_junc_db_by_seg_in_chrom(segs, junc_db, bam, ext):
     for row in segs.iloc[:-1, :].itertuples():
@@ -108,13 +118,17 @@ def update_junc_db_by_seg_in_chrom(segs, junc_db, bam, ext):
                 junc_db.at[idx1[0], 'count'] += 1
     return junc_db
 
+
 def write_junc_db(filename, junc_db):
-    junc_db.sort_values(by=['chrom_5p', 'pos_5p', 'strand_5p', 'count']).to_csv(filename, sep='\t', index=False)
+    junc_db.sort_values(by=['chrom_5p', 'pos_5p', 'strand_5p', 'count']).to_csv(
+        filename, sep='\t', index=False)
+
 
 def get_avg_depth(depth, chrom, start, end):
-    return sum(map(lambda x : int(x.split('\t')[-1]), depth.fetch(chrom, start, end))) / (end - start + 1)
+    return sum(map(lambda x: int(x.split('\t')[-1]), depth.fetch(chrom, start, end))) / (end - start + 1)
 
-def generate_config(filename, samplename, sv, segs, depth_tabix, bam, ext, ploidy, v_chrom):
+
+def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v_chrom):
     output = []
     total_depth = 0
     total_length = 0
@@ -122,9 +136,11 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam, ext, ploid
         output_segs = []
         for seg in segs.itertuples():
             total_length += seg.end - seg.start + 1
-            seg_depth = get_avg_depth(depth_tabix, seg.chrom, seg.start, seg.end)
+            seg_depth = get_avg_depth(
+                depth_tabix, seg.chrom, seg.start, seg.end)
             total_depth += seg_depth * (seg.end - seg.start + 1)
-            output_segs.append(f'SEG H:{seg.ID}:{seg.chrom}:{seg.start}:{seg.end} {seg_depth} -1')
+            output_segs.append(
+                f'SEG H:{seg.ID}:{seg.chrom}:{seg.start}:{seg.end} {seg_depth} -1')
         ins_id = len(segs) + 1
         ins_segs = []
 
@@ -132,10 +148,12 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam, ext, ploid
         juncs_depth = []
         left = next(segs.itertuples())
         for right in segs.iloc[1:].itertuples():
-            support = get_normal_junc_read_num(bam, left.chrom, left.end, ext=ext)
+            support = get_normal_junc_read_num(
+                bam, left.chrom, left.end, ext=ext)
             if support > 5:
                 juncs_depth.append(support)
-                output_juncs.append(f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B')
+                output_juncs.append(
+                    f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B')
             left = right
         for row in sv.itertuples():
             if row.strand_5p == '+':
@@ -143,45 +161,49 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam, ext, ploid
                     left = segs.loc[lambda r: r.chrom == row.chrom_5p]\
                                .loc[lambda r: r.end == row.pos_5p]
                     right = segs.loc[lambda r: r.chrom == row.chrom_3p]\
-                               .loc[lambda r: r.start == row.pos_3p]
+                        .loc[lambda r: r.start == row.pos_3p]
                 else:
                     left = segs.loc[lambda r: r.chrom == row.chrom_5p]\
                                .loc[lambda r: r.end == row.pos_5p]
                     right = segs.loc[lambda r: r.chrom == row.chrom_3p]\
-                               .loc[lambda r: r.end == row.pos_3p]
+                        .loc[lambda r: r.end == row.pos_3p]
             else:
                 if row.strand_3p == row.strand_5p:
                     left = segs.loc[lambda r: r.chrom == row.chrom_5p]\
                                .loc[lambda r: r.start == row.pos_5p]
                     right = segs.loc[lambda r: r.chrom == row.chrom_3p]\
-                               .loc[lambda r: r.end == row.pos_3p]
+                        .loc[lambda r: r.end == row.pos_3p]
                 else:
                     left = segs.loc[lambda r: r.chrom == row.chrom_5p]\
                                .loc[lambda r: r.start == row.pos_5p]
                     right = segs.loc[lambda r: r.chrom == row.chrom_3p]\
-                               .loc[lambda r: r.start == row.pos_3p]
+                        .loc[lambda r: r.start == row.pos_3p]
 
             juncs_depth.append(row.junc_reads)
             if row.inner_ins == '.':
                 j_r = 0
                 j_r = row.junc_reads
-                output_juncs.append(f'JUNC H:{left.ID.values[0]}:{row.strand_5p} H:{right.ID.values[0]}:{row.strand_3p} {j_r} -1 U B')
+                output_juncs.append(
+                    f'JUNC H:{left.ID.values[0]}:{row.strand_5p} H:{right.ID.values[0]}:{row.strand_3p} {j_r} -1 U B')
 
             else:
-                ins_segs.append((ins_id, f'Ins_{ins_id}', 1, len(row.inner_ins), row.inner_ins))
-                output_segs.append(f'SEG H:{ins_id}:Ins_{ins_id}:1:{len(row.inner_ins)} 1 -1')
-                output_juncs.append(f'JUNC H:{left.ID.values[0]}:{row.strand_5p} H:{ins_id}:+ {row.junc_reads} -1 U B')
-                output_juncs.append(f'JUNC H:{ins_id}:+ H:{right.ID.values[0]}:{row.strand_3p} {row.junc_reads} -1 U B')
+                ins_segs.append(
+                    (ins_id, f'Ins_{ins_id}', 1, len(row.inner_ins), row.inner_ins))
+                output_segs.append(
+                    f'SEG H:{ins_id}:Ins_{ins_id}:1:{len(row.inner_ins)} 1 -1')
+                output_juncs.append(
+                    f'JUNC H:{left.ID.values[0]}:{row.strand_5p} H:{ins_id}:+ {row.junc_reads} -1 U B')
+                output_juncs.append(
+                    f'JUNC H:{ins_id}:+ H:{right.ID.values[0]}:{row.strand_3p} {row.junc_reads} -1 U B')
                 ins_id += 1
         sink = ""
         for i in range(len(segs)):
             if v_chrom in segs.iloc[i].chrom.lower() and i >= 1:
                 sink = segs.iloc[i-1].ID
                 break
-        fout.write(f'SAMPLE {samplename}\n')
         fout.write(f'AVG_SEG_DP {total_depth * 1.0 / total_length}\n')
         fout.write(f'AVG_JUNC_DP {np.mean(juncs_depth)}\n')
-        fout.write(f'PURITY 1\n')
+        fout.write(f'PURITY {purity}\n')
         fout.write(f'AVG_PLOIDY {ploidy}\n')
         fout.write(f'PLOIDY {ploidy}m1\n')
         fout.write(f'SOURCE H:1\n')
@@ -189,8 +211,76 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam, ext, ploid
         fout.write('\n'.join(output_segs + output_juncs) + '\n')
 
     if len(ins_segs) > 0:
-        pd.DataFrame(ins_segs, columns=['ID', 'chrom', 'start', 'end', 'seq']).to_csv(os.path.dirname(filename) + './' + samplename + '.inner_ins', index=False, sep='\t')
+        pd.DataFrame(ins_segs, columns=['ID', 'chrom', 'start', 'end', 'seq']).to_csv(
+            filename + '.inner_ins', index=False, sep='\t')
+
 
 def parse_chrom_info(chrom_info):
-    a = chrom_info.split(r'([:-])', chrom_info) 
-    return {'chrom': a[0], 'start': a[1], 'end': a[2]}
+    a = re.split(r'([:-])', chrom_info)
+    return {'chrom': a[0], 'start': a[2], 'end': a[4]}
+
+
+def filter_sv(sv_file, h_chrom_info, v_chrom_info):
+    res = []
+    sv = bpsmap.read_sv(sv_file)
+    sv = dedup(sv)
+    # h_chrom_info = parse_chrom_info(h_chrom)
+    # v_chrom_info = parse_chrom_info(v_chrom)
+    start = int(h_chrom_info['start'])
+    end = int(h_chrom_info['end'])
+    # chrome_infos = [h_chrom_info,v_chrom_info]
+    sv_sub = sv.loc[lambda r: (r.chrom_5p.isin([v_chrom_info['chrom'],h_chrom_info['chrom']]))
+                    & (r.chrom_3p.isin([h_chrom_info['chrom'], v_chrom_info['chrom']]))]
+    for row in sv_sub.itertuples():
+        if (row.chrom_5p == h_chrom_info['chrom'] \
+            and (row.pos_5p > end or row.pos_5p < start))\
+        or (row.chrom_3p == h_chrom_info['chrom']\
+            and (row.pos_3p > end or row.pos_3p < start)):
+            continue
+        res.append(row)
+    return pd.DataFrame(res), [h_chrom_info, v_chrom_info]
+
+def get_integrate_chrom(sv_file, v_chrom, front_padding, back_padding):
+    sv = open(sv_file)
+    res={}
+    for line in sv.readlines():
+        a = line.split('\t')
+        if a[0] == v_chrom and a[3] != v_chrom:
+            tmp_p = int(a[4])
+            if a[3] in res.keys():
+                res[a[3]][0] = res[a[3]][0]+1
+                if tmp_p < res[a[3]][1]:
+                    res[a[3]][1] = tmp_p
+                if tmp_p > res[a[3]][2]:
+                    res[a[3]][2] = tmp_p
+            else:
+                res[a[3]] = []
+                res[a[3]].append(1)
+                res[a[3]].append(tmp_p)
+                res[a[3]].append(tmp_p)
+        
+        if a[3] == v_chrom and a[0] != v_chrom:
+            tmp_p = int(a[1])
+            if a[0] in res.keys():
+                res[a[0]][0] = res[a[0]][0]+1
+                if tmp_p < res[a[0]][1]:
+                    res[a[0]][1] = tmp_p
+                if tmp_p > res[a[0]][2]:
+                    res[a[0]][2] = tmp_p
+            else:
+                res[a[0]] = []
+                res[a[0]].append(1)
+                res[a[0]].append(tmp_p)
+                res[a[0]].append(tmp_p)
+
+    if len(res) == 0:
+        print("There's no integration event with "+v_chrom)
+        return v_chrom
+    m_k = list(res.keys())[0]
+    m_v = res[m_k][0]
+    for k in res.keys():
+        if res[k][0] >= m_v:
+            m_k=k
+            m_v=res[k][0]
+            # TODO max染色体的长度
+    return {'chrom': m_k, 'start': max(res[m_k][1] - front_padding, 1), 'end': max(res[m_k][2] + back_padding, 0)}

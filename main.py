@@ -19,6 +19,7 @@ class MainArgParser:
         import pandas as pd
         import numpy as np
         parser = argparse.ArgumentParser(description='Generate localhap config for each individual')
+        
         parser.add_argument('-f', '--sv-file',
                             dest='sv_file',
                             required=True,
@@ -27,108 +28,169 @@ class MainArgParser:
                             dest='bam_file',
                             required=True,
                             help='Individual BAM file')
-        parser.add_argument('-m', '--bps-map',
-                            dest='bps_map',
+        parser.add_argument('-o', '--out_dir',
+                            dest='out_dir',
                             required=True,
-                            help='Breakpoint map file')
-        parser.add_argument('-j', '--junc-db',
-                            dest='junc_db',
+                            help='output dir')
+        parser.add_argument('-s', '--sample_name',
+                            dest='sample_name',
                             required=True,
-                            help='Junction database')
+                            help='sample_name')
         parser.add_argument('-d', '--depth-tabix',
                             dest='depth_file',
                             required=True,
                             help='Tabixed depth for counting supports')
-        parser.add_argument('--h_chrom',
-                            dest='h_chrom',
-                            required=True,
-                            help='Host chrome')
         parser.add_argument('--v_chrom',
                             dest='v_chrom',
                             required=True,
                             help='Host chrome')
-        parser.add_argument('-s', '--sample-name',
-                            dest='sample_name',
-                            required=True,
-                            help='Sample name')
         parser.add_argument('-e', '--extension-bp',
                             dest='ext',
                             required=True,
                             type=int,
                             help='Extended bp for normal junctions')
-        parser.add_argument('-p', '--ploidy',
+        parser.add_argument('--ploidy',
                             dest='ploidy',
-                            required=True,
+                            required=False,
                             default=2,
                             type=int,
-                            help='Extended bp for normal junctions')
-        parser.add_argument('-c', '--out-config',
-                            dest='out_config',
-                            required=True,
-                            help='Output path of config')
-        parser.add_argument('-g', '--segment',
-                            dest='seg',
-                            required=True,
-                            help='Output path of segment')
-        parser.add_argument('-i', '--keep-imprecise',
-                            dest='keep_imprecise',
+                            help='Ploidy')
+        parser.add_argument('--purity',
+                            dest='purity',
+                            required=False,
+                            default=1,
+                            type=int,
+                            help='Ploidy')
+        parser.add_argument('--is_targeted',
+                            dest='is_targeted',
+                            required=False,
+                            default=False,
                             action='store_true',
-                            default=True,
-                            help='Keep imprecise SV')
-        parser.add_argument('-I', '--keep-insertions',
-                            dest='keep_insertions',
-                            action='store_true',
-                            default=True,
-                            help='Keep insertions')
+                            help='Is your data is targeted sequencing data')
+        parser.add_argument('--front_padding',
+                            dest='front_padding',
+                            required=False,
+                            default=500,
+                            type=int,
+                            help='Front padding')
+        parser.add_argument('--back_padding',
+                            dest='back_padding',
+                            required=False,
+                            default=500,
+                            type=int,
+                            help='Back padding')
+
         args = parser.parse_args(sys.argv[2:])
+        v_chrom_info = generate_lh.parse_chrom_info(args.v_chrom)
+        h_chrom_info = generate_lh.get_integrate_chrom(args.sv_file,v_chrom_info['chrom'],args.front_padding, args.back_padding)
+
+        out_seg = os.path.join(args.out_dir, args.sample_name+'.seg')
+        out_junc = os.path.join(args.out_dir, args.sample_name+'.junc')
+        out_lh = os.path.join(args.out_dir, args.sample_name+'.lh')
 
         print('Reading SV')
-        sv = bpsmap.read_sv(args.sv_file)
-        sv = generate_lh.dedup(sv)
-
-        chrome_infos = [generate_lh.parse_chrom_info(args.h_chrome), generate_lh.parse_chrom_info(args.v_chrome)]
+        sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info)
         segs = pd.DataFrame()
         id_start = 1
-        for row in chrome_infos:
-            seg, id_start = generate_lh.segmentation(sv, row.chrom, row.start, row.end, id_start)
+        for row in chrom_infos:
+            seg, id_start = generate_lh.segmentation(sv_sub, row['chrom'], int(row['start']), int(row['end']), id_start)
             segs = segs.append(seg)
 
-        segs.to_csv(args.seg, index=False, sep='\t')
+        segs.to_csv(out_seg, index=False, sep='\t')
         bam = pysam.AlignmentFile(args.bam_file)
         depth_tabix = pysam.TabixFile(args.depth_file)
 
         print('Updating junc db')
         junc_db = pd.DataFrame(columns=['chrom_5p', 'pos_5p', 'strand_5p', 'chrom_3p', 'pos_3p', 'strand_3p', 'count'])
-        junc_db = generate_lh.update_junc_db_by_sv(sv, junc_db)
+        junc_db = generate_lh.update_junc_db_by_sv(sv_sub, junc_db)
         junc_db = generate_lh.update_junc_db_by_seg_in_chrom(segs, junc_db, bam, args.ext)
-        generate_lh.write_junc_db(args.junc_db, junc_db)
+        generate_lh.write_junc_db(out_junc, junc_db)
 
+        print('Generate lh file')
+        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom='hpv18')
 
-
-        generate_lh.generate_config(args.out_config, args.sample_name, sv, segs, depth_tabix, bam, ext=args.ext, ploidy=args.ploidy, is_seeksv=args.is_seeksv)
-
-    def parseILP(self):
-        import parseILP
-        parser = argparse.ArgumentParser(description='Parse ILP results')
-        parser.add_argument('-i', '--in-checked-lh',
-                            dest='checked_lh',
+    def process_tgs(self):
+        from subprocess import call
+        parser = argparse.ArgumentParser(description='Process tgs data')
+        parser.add_argument('-r', '--ref',
+                            dest='ref',
                             required=True,
-                            help='Checked lh file')
-        parser.add_argument('-s', '--sol',
-                            dest='sol_file',
+                            help='Reference')
+        parser.add_argument('-l','--lh_file',
+                            dest='lh_file',
                             required=True,
-                            help='Solution file')
-        parser.add_argument('-o', '--output-balanced-lh',
-                            dest='balanced_lh',
+                            help='lh file')       
+        parser.add_argument('-t','--tgs_fa',
+                            dest='tgs_fa',
+                            required=False,
+                            help='Three generation sequencing data in fasta format')
+        parser.add_argument('-o','--tgs_out',
+                            dest='tgs_out',
                             required=True,
-                            help='Output balanced lh file')
+                            help='output path fro tgs file')
         args = parser.parse_args(sys.argv[2:])
+        if not os.path.exists(args.tgs_out):
+            os.mkdir(args.tgs_out)
+        print('Parser tgs data')
+        tgs_cmd = "sh ./tgs_scripts/pipe.sh {} {} {} {}".format(args.lh_file,args.ref,args.tgs_fa,args.tgs_out)
+        if call(tgs_cmd, shell=True):
+            raise Exception('Parse tgs data error')
+    def construct_hap(self):
+        from subprocess import call
+        import parseILP
+        parser = argparse.ArgumentParser(description='process NGS WGS data')
+        parser.add_argument('-i', '--in_lh',
+                            dest='in_lh',
+                            required=True,
+                            help='input lh file')
+        parser.add_argument('-j', '--in_junc',
+                            dest='in_junc',
+                            required=True,
+                            help='input junction file')
+        parser.add_argument('-o', '--out_dir',
+                            dest='out_dir',
+                            required=True,
+                            help='output dir')
+        parser.add_argument('-s', '--sample_name',
+                            dest='sample_name',
+                            required=True,
+                            help='sample name')
+        parser.add_argument('--local_hap',
+                            dest='local_hap',
+                            required=True,
+                            help='local hap path')
+        parser.add_argument('--cbc',
+                            dest='cbc_path',
+                            required=True,
+                            help='cbc paht')
+        parser.add_argument('-t','--tgs_junc',
+                            dest='tgs_junc',
+                            required=False,
+                            help='tgs junc file')
 
-        sol = parseILP.parse_ilp_result(args.sol_file)
-        parseILP.generate_balanced_lh(args.balanced_lh, args.checked_lh, sol)
-
-    def all_process(self):
-        
+        args = parser.parse_args(sys.argv[2:])
+        # call cnv
+        # generate lh
+        f = os.path.join(args.out_dir, args.sample_name)
+        # check
+        check_cmd = "{} check {} {} {}.checked.lh {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f,f)
+        cbc_cmd = "{} {}.lp solve solu {}.sol".format(args.cbc_path, f,f)
+        if call(check_cmd, shell=True):
+            raise Exception("localhap check running error")
+        if call(cbc_cmd, shell=True):
+            raise Exception("Cbc running error")
+        sol = parseILP.parse_ilp_result(f+'.sol')
+        # parser ILP result
+        parseILP.generate_balanced_lh(f+'.balance.lh', f+'.checked.lh', sol)
+        # generate cycle and simple haps
+        # TODO 调整localhap参数
+        solve_cmd = ""
+        if args.tgs:
+            solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
+        else:    
+            solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
+        if call(solve_cmd, shell=True):
+            raise Exception("localhap solve running error")
 
 if __name__ == '__main__':
     MainArgParser()
