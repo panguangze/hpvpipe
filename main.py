@@ -79,6 +79,11 @@ class MainArgParser:
                             default=500,
                             type=int,
                             help='Back padding')
+        parser.add_argument('--hic_sv',
+                            dest='hic_sv',
+                            required=False,
+                            help='Sv file provide by hic breakfinder')
+
 
         args = parser.parse_args(sys.argv[2:])
         v_chrom_info = generate_lh.parse_chrom_info(args.v_chrom)
@@ -89,7 +94,7 @@ class MainArgParser:
         out_lh = os.path.join(args.out_dir, args.sample_name+'.lh')
 
         print('Reading SV')
-        sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info)
+        sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info, args.hic_sv)
         segs = pd.DataFrame()
         id_start = 1
         for row in chrom_infos:
@@ -107,7 +112,7 @@ class MainArgParser:
         generate_lh.write_junc_db(out_junc, junc_db)
 
         print('Generate lh file')
-        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom='hpv18')
+        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'])
 
     def process_tgs(self):
         from subprocess import call
@@ -135,6 +140,8 @@ class MainArgParser:
         tgs_cmd = "sh ./tgs_scripts/pipe.sh {} {} {} {}".format(args.lh_file,args.ref,args.tgs_fa,args.tgs_out)
         if call(tgs_cmd, shell=True):
             raise Exception('Parse tgs data error')
+
+
     def construct_hap(self):
         from subprocess import call
         import parseILP
@@ -162,7 +169,7 @@ class MainArgParser:
         parser.add_argument('--cbc',
                             dest='cbc_path',
                             required=True,
-                            help='cbc paht')
+                            help='cbc path')
         parser.add_argument('-t','--tgs_junc',
                             dest='tgs_junc',
                             required=False,

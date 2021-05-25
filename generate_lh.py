@@ -219,8 +219,50 @@ def parse_chrom_info(chrom_info):
     a = re.split(r'([:-])', chrom_info)
     return {'chrom': a[0], 'start': a[2], 'end': a[4]}
 
+def reverse_strand(strand):
+    if strand == '+':
+        return '-'
+    if strand == '-':
+        return '+'
 
-def filter_sv(sv_file, h_chrom_info, v_chrom_info):
+# def filter_by_hic(sv_sub, hic_sv, ):
+#     for row in sv_sub.itertuples():
+
+def filter_by_hic(sv_sub, hic_sv, h_chrom, v_chrom):
+    res = []
+    hic_svs = {h_chrom:{h_chrom: [], v_chrom: []}, v_chrom: {h_chrom: [], v_chrom :[]}}
+    f = open(hic_sv)
+    for line in f.readlines():
+        a = line.split('\t')
+        chr1 = a[1]
+        chr1_s = int(a[2])
+        chr1_e = int(a[3])
+        chr1_strand = a[4]
+        chr2 = a[5]
+        chr2_s = int(a[6])
+        chr2_e = int(a[7])
+        chr2_strand = a[8]
+        
+        hic_svs[chr1][chr2].append([chr1_s, chr1_e, chr1_strand, chr2_s, chr2_e, chr2_strand])
+        hic_svs[chr2][chr1].append([chr2_s, chr2_e, reverse_strand(chr2_strand), chr1_s, chr1_e, reverse_strand(chr1_strand)])
+
+    for row in sv_sub.itertuples():
+        chr1 = sv_sub.chrom_5p
+        chr2 = sv_sub.chrom_3p
+        pos1 = sv_sub.pos_5p
+        pos2 = sv_sub.pos_3p
+        strand1 = sv_sub.strand_5p
+        strand2 = sv_sub.strand_3p
+
+        for l in res[chr1][chr2]:
+            if l[0] <= pos1 and pos1 <= l[1] and strand1 == l[2] and l[3] <= pos2 and pos2 <= l[4] and strand2 = l[5]:
+                res.append(row)
+                break
+            else:
+                pass
+    return pd.DataFrame(res)
+
+def filter_sv(sv_file, h_chrom_info, v_chrom_info, hic_sv=None):
     res = []
     sv = bpsmap.read_sv(sv_file)
     sv = dedup(sv)
@@ -231,6 +273,8 @@ def filter_sv(sv_file, h_chrom_info, v_chrom_info):
     # chrome_infos = [h_chrom_info,v_chrom_info]
     sv_sub = sv.loc[lambda r: (r.chrom_5p.isin([v_chrom_info['chrom'],h_chrom_info['chrom']]))
                     & (r.chrom_3p.isin([h_chrom_info['chrom'], v_chrom_info['chrom']]))]
+    if hic_sv != None:
+        sv_sub = filter_by_hic(sv_sub, hic_sv, h_chrom_info['chrom'], v_chrom_info['chrom'])
     for row in sv_sub.itertuples():
         if (row.chrom_5p == h_chrom_info['chrom'] \
             and (row.pos_5p > end or row.pos_5p < start))\
