@@ -255,7 +255,7 @@ def filter_by_hic(sv_sub, hic_sv, h_chrom, v_chrom):
         strand2 = sv_sub.strand_3p
 
         for l in res[chr1][chr2]:
-            if l[0] <= pos1 and pos1 <= l[1] and strand1 == l[2] and l[3] <= pos2 and pos2 <= l[4] and strand2 = l[5]:
+            if l[0] <= pos1 and pos1 <= l[1] and strand1 == l[2] and l[3] <= pos2 and pos2 <= l[4] and strand2 == l[5]:
                 res.append(row)
                 break
             else:
