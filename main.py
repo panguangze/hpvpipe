@@ -43,7 +43,12 @@ class MainArgParser:
         parser.add_argument('--v_chrom',
                             dest='v_chrom',
                             required=True,
-                            help='Host chrome')
+                            help='Virus chrome')
+        parser.add_argument('--h_chrom',
+                            dest='h_chrom',
+                            required=False,
+                            help='Host chrome, if not provide, \
+                            we will search the main integration host chrom.')
         parser.add_argument('-e', '--extension-bp',
                             dest='ext',
                             required=True,
@@ -72,13 +77,13 @@ class MainArgParser:
                             required=False,
                             default=500,
                             type=int,
-                            help='Front padding')
+                            help='Front padding, not work if h_chrom is provided')
         parser.add_argument('--back_padding',
                             dest='back_padding',
                             required=False,
                             default=500,
                             type=int,
-                            help='Back padding')
+                            help='Back padding, not work if h_chrom is provided')
         parser.add_argument('--hic_sv',
                             dest='hic_sv',
                             required=False,
@@ -87,8 +92,11 @@ class MainArgParser:
 
         args = parser.parse_args(sys.argv[2:])
         v_chrom_info = generate_lh.parse_chrom_info(args.v_chrom)
-        h_chrom_info = generate_lh.get_integrate_chrom(args.sv_file,v_chrom_info['chrom'],args.front_padding, args.back_padding)
-
+        h_chrom_info = ''
+        if args.h_chrom:
+            h_chrom_info=generate_lh.parse_chrom_info(args.h_chrom)
+        else:
+            h_chrom_info = generate_lh.get_integrate_chrom(args.sv_file,v_chrom_info['chrom'],args.front_padding, args.back_padding)
         out_seg = os.path.join(args.out_dir, args.sample_name+'.seg')
         out_junc = os.path.join(args.out_dir, args.sample_name+'.junc')
         out_lh = os.path.join(args.out_dir, args.sample_name+'.lh')
