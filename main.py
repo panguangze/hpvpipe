@@ -200,7 +200,7 @@ class MainArgParser:
         # generate cycle and simple haps
         # TODO 调整localhap参数
         solve_cmd = ""
-        if args.tgs:
+        if args.tgs_junc:
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
         else:    
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)

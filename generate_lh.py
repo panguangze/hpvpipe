@@ -181,7 +181,6 @@ def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v
 
             juncs_depth.append(row.junc_reads)
             if row.inner_ins == '.':
-                print(left.ID.values[0], right.ID.values[0])
                 j_r = 0
                 j_r = row.junc_reads
                 output_juncs.append(
