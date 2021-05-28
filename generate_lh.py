@@ -146,8 +146,7 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
             seg_depth = get_avg_depth(
                 depth_tabix, seg.chrom, seg.start, seg.end)
             total_depth += seg_depth * (seg.end - seg.start + 1)
-            output_segs.append(
-                f'SEG H:{seg.ID}:{seg.chrom}:{seg.start}:{seg.end} {seg_depth} -1')
+            output_segs.append(f'SEG H:{seg.ID}:{seg.chrom}:{seg.start}:{seg.end} {seg_depth} -1')
         ins_id = len(segs) + 1
         ins_segs = []
 
