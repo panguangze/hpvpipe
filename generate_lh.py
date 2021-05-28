@@ -236,7 +236,7 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
 
 def parse_chrom_info(chrom_info):
     a = re.split(r'([:-])', chrom_info)
-    return {'chrom': a[0], 'start': a[2], 'end': a[4]}
+    return {'chrom': a[0], 'start': int(a[2]), 'end': int(a[4])}
 
 def reverse_strand(strand):
     if strand == '+':
@@ -346,4 +346,10 @@ def get_integrate_chrom(sv_file, v_chrom, front_padding, back_padding):
             m_k=k
             m_v=res[k][0]
             # TODO max染色体的长度
-    return {'chrom': m_k, 'start': max(res[m_k][1] - front_padding, 1), 'end': max(res[m_k][2] + back_padding, 0)}
+    s = max(res[m_k][1], 1)
+    e = max(res[m_k][2], 0)
+    if front_padding:
+        s = max(res[m_k][1] - front_padding, 1)
+    if back_padding:
+        e = max(res[m_k][2] + back_padding, 0)
+    return {'chrom': m_k, 'start': s, 'end': e}
