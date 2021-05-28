@@ -132,7 +132,7 @@ def get_avg_depth(depth, chrom, start, end):
     return sum(map(lambda x: int(x.split('\t')[-1]), depth.fetch(chrom, start, end))) / (end - start + 1)
 
 
-def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v_chrom, is_targeted):
+def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploidy, purity, v_chrom):
     output = []
     total_depth = 0
     total_length = 0
