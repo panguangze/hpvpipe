@@ -45,7 +45,7 @@ def dedup(sv):
     return sv[~sv.duplicated(sv.columns[:6], keep='last')]
 
 
-def segmentation(sv, chrom, start, end, id_start=1):
+def segmentation(sv, chrom, start=None, end=None, id_start=1):
     sv_5p = bpsmap.get_precise_sv(
         sv, chrom_5p=chrom, start_5p=start, end_5p=end)
     sv_3p = bpsmap.get_precise_sv(
@@ -54,10 +54,14 @@ def segmentation(sv, chrom, start, end, id_start=1):
 
     segs = []
     for p in bps[1:-1]:
+        if start == None:
+            start = p
+            continue
         segs.append((id_start, chrom, start, p))
         start = p
         id_start += 1
-    segs.append((id_start, chrom, start, end))
+    if end != None:
+        segs.append((id_start, chrom, start, end))
     return pd.DataFrame(segs, columns=['ID', 'chrom', 'start', 'end']), id_start + 1
 
 
@@ -128,10 +132,13 @@ def get_avg_depth(depth, chrom, start, end):
     return sum(map(lambda x: int(x.split('\t')[-1]), depth.fetch(chrom, start, end))) / (end - start + 1)
 
 
-def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v_chrom):
+def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v_chrom, is_targeted):
     output = []
     total_depth = 0
     total_length = 0
+    min_support = 3
+    if is_targeted:
+        min_support = 1
     with open(filename, 'w') as fout:
         output_segs = []
         for seg in segs.itertuples():
@@ -147,14 +154,27 @@ def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v
         output_juncs = []
         juncs_depth = []
         left = next(segs.itertuples())
+        all_supports = 0
+        finded_support_num = 0
+        added_right = []
         for right in segs.iloc[1:].itertuples():
             support = get_normal_junc_read_num(
                 bam, left.chrom, left.end, ext=ext)
-            if support > 5:
+            if support > min_support:
+                all_supports = all_supports + support
+                finded_support_num = finded_support_num + 1
                 juncs_depth.append(support)
                 output_juncs.append(
                     f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B')
+                added_right.append(right.ID)
             left = right
+        avg_support = all_supports / finded_support_num
+        # for right in segs.iloc[1:].itertuples():
+        #     print(added_right)
+        #     if right.ID not in added_right:
+        #         output_juncs.append(
+        #             f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B')
+        #     left = right
         for row in sv.itertuples():
             if row.strand_5p == '+':
                 if row.strand_3p == row.strand_5p:

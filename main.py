@@ -120,7 +120,7 @@ class MainArgParser:
         generate_lh.write_junc_db(out_junc, junc_db)
 
         print('Generate lh file')
-        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'])
+        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'], args.is_targeted)
 
     def process_tgs(self):
         from subprocess import call
@@ -186,10 +186,13 @@ class MainArgParser:
         args = parser.parse_args(sys.argv[2:])
         # call cnv
         # generate lh
+        if not os.path.exists(args.out_dir):
+            os.mkdir(args.out_dir)
         f = os.path.join(args.out_dir, args.sample_name)
         # check
         check_cmd = "{} check {} {} {}.checked.lh {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f,f)
         cbc_cmd = "{} {}.lp solve solu {}.sol".format(args.cbc_path, f,f)
+        print(check_cmd)
         if call(check_cmd, shell=True):
             raise Exception("localhap check running error")
         if call(cbc_cmd, shell=True):
@@ -204,6 +207,7 @@ class MainArgParser:
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
         else:    
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
+        print(solve_cmd)
         if call(solve_cmd, shell=True):
             raise Exception("localhap solve running error")
 
