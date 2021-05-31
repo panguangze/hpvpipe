@@ -100,11 +100,13 @@ class MainArgParser:
         out_seg = os.path.join(args.out_dir, args.sample_name+'.seg')
         out_junc = os.path.join(args.out_dir, args.sample_name+'.junc')
         out_lh = os.path.join(args.out_dir, args.sample_name+'.lh')
+        print(h_chrom_info)
 
         print('Reading SV')
         sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info, args.hic_sv)
         segs = pd.DataFrame()
         id_start = 1
+        print(h_chrom_info)
         for row in chrom_infos:
             seg, id_start = generate_lh.segmentation(sv_sub, row['chrom'], int(row['start']), int(row['end']), id_start)
             segs = segs.append(seg)
