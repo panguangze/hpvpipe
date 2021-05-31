@@ -209,7 +209,6 @@ class MainArgParser:
         # parser ILP result
         parseILP.generate_balanced_lh(f+'.balance.lh', f+'.checked.lh', sol)
         # generate cycle and simple haps
-        # TODO 调整localhap参数
         solve_cmd = ""
         if args.tgs_junc:
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
