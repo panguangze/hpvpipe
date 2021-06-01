@@ -75,13 +75,11 @@ class MainArgParser:
         parser.add_argument('--front_padding',
                             dest='front_padding',
                             required=False,
-                            default=500,
                             type=int,
                             help='Front padding, not work if h_chrom is provided')
         parser.add_argument('--back_padding',
                             dest='back_padding',
                             required=False,
-                            default=500,
                             type=int,
                             help='Back padding, not work if h_chrom is provided')
         parser.add_argument('--hic_sv',
@@ -151,7 +149,30 @@ class MainArgParser:
         if call(tgs_cmd, shell=True):
             raise Exception('Parse tgs data error')
 
+    def process_hic(self):
+        import process_hic
 
+        parser = argparse.ArgumentParser(description='process HIC data')
+        parser.add_argument('-i', '--in_lh',
+                            dest='in_lh',
+                            required=True,
+                            help='input lh file')
+        parser.add_argument('-r', '--ref',
+                            dest='in_ref',
+                            required=True,
+                            help='input junction file')
+        parser.add_argument('-o', '--out_path',
+                            dest='out_path',
+                            required=True,
+                            help='out_path')
+        parser.add_argument('--samtools',
+                            dest='samtools',
+                            required=True,
+                            help='Samtools path')
+        args = parser.parse_args(sys.argv[2:])
+
+        process_hic.parser_fa_from_lh(args.in_lh, args.samtools, args.out_path, args.in_ref)
+        
     def construct_hap(self):
         from subprocess import call
         import parseILP

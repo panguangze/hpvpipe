@@ -226,7 +226,10 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
         fout.write(f'AVG_PLOIDY {ploidy}\n')
         fout.write(f'PLOIDY {ploidy}m1\n')
         fout.write(f'SOURCE H:1\n')
-        fout.write(f'SINK H:{sink}\n')
+        if is_targeted:
+            fout.write(f'SINK H:{segs.iloc[-1].ID}\n')
+        else:
+            fout.write(f'SINK H:{sink}\n')
         fout.write('\n'.join(output_segs + output_juncs) + '\n')
 
     if len(ins_segs) > 0:
