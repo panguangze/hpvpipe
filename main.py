@@ -86,6 +86,10 @@ class MainArgParser:
                             dest='hic_sv',
                             required=False,
                             help='Sv file provide by hic breakfinder')
+        parser.add_argument('--u_span_reads',
+                            dest='u_span_reads',
+                            required=False,
+                            help='whether using span reads when calculate junction')
 
 
         args = parser.parse_args(sys.argv[2:])
@@ -105,7 +109,9 @@ class MainArgParser:
         segs = pd.DataFrame()
         id_start = 1
         print(h_chrom_info)
+        chrom_infos=[{'chrom': 'chr2', 'start': 205681990, 'end': 205798133}]
         for row in chrom_infos:
+            print(row)
             seg, id_start = generate_lh.segmentation(sv_sub, row['chrom'], int(row['start']), int(row['end']), id_start)
             segs = segs.append(seg)
 
