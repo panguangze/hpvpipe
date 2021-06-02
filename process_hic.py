@@ -42,7 +42,6 @@ def seg_matrix2id_matrix(in_lh, seg_matrix_file, out_file):
 
 def normalize(lh_file, seg_matrix_file):
     h_m = pd.read_csv(hic_file,header=None, sep='\t',index_col=False, names=['s1', 's2', 'contact_v']).astype({'s1':str,'s2': str, 'contact_v': np.int64})
-    
     for row in h_m.itertuples():
         s1 = row["s1"].split(":")
         s1 = row["s2"].split(":")
