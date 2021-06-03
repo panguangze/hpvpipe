@@ -177,8 +177,9 @@ class MainArgParser:
                             help='Samtools path')
         args = parser.parse_args(sys.argv[2:])
 
+        # Segement to fa
         process_hic.parser_fa_from_lh(args.in_lh, args.samtools, args.out_path, args.in_ref)
-        
+        # matrix
     def construct_hap(self):
         from subprocess import call
         import parseILP
