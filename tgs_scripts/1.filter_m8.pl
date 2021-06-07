@@ -1,7 +1,6 @@
-$indir = $ARGV[0];
-
+($indir,$len) = $ARGV;
+$len = 2*$len
 @file = glob("$indir/*m8");
-$len = 200;
 foreach $list(@file){
         %count = ();
         $n = 0;

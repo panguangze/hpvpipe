@@ -1,6 +1,6 @@
 # $fa = "orig_ref.fa";
 # $segs = "input.segs";
-($fa,$segs,$juncs) = @ARGV;
+($fa,$segs,$juncs,$n) = @ARGV;
 open IN,$segs;
 <IN>;
 while(<IN>){
@@ -9,7 +9,6 @@ while(<IN>){
         $id_seg{$l[0]} = "$l[1]:$l[2]-$l[3]";
         # print $id_seg{"H1"}
 }
-$n = 100;
 open IN,$juncs;
 while(<IN>){
         chomp;

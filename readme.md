@@ -6,3 +6,9 @@ depth 文件： samtools depth -aa --reference ../../../gate_home/ref/hg38_hpv.f
 
 localhap:/home/tanbowen/workspace/LocalHap/debug/src/localhap
 cbc:/home/tanbowen/download/Cbc-2.9.9/build/Cbc/src/cbc
+
+TODO seeksv 支持 done
+TODO tgs 参数 done
+TODO 可视化环
+TODO hic筛选map	
+TODO check不过	

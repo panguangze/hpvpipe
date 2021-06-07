@@ -141,11 +141,23 @@ class MainArgParser:
                             dest='tgs_out',
                             required=True,
                             help='output path fro tgs file')
+        parser.add_argument('--junc_len',
+                            dest='junc_len',
+                            default=100,
+                            required=False,
+                            type=int,
+                            help='Length of the junction point for blast')
+        parser.add_argument('--max_bias',
+                            dest='max_bias',
+                            default=200,
+                            required=False,
+                            type=int,
+                            help='Max value of the distance between two junction point and the middle segment')
         args = parser.parse_args(sys.argv[2:])
         if not os.path.exists(args.tgs_out):
             os.mkdir(args.tgs_out)
         print('Parser tgs data')
-        tgs_cmd = "sh ./tgs_scripts/pipe.sh {} {} {} {}".format(args.lh_file,args.ref,args.tgs_fa,args.tgs_out)
+        tgs_cmd = "sh ./tgs_scripts/pipe.sh {} {} {} {} {} {}".format(args.lh_file,args.ref,args.tgs_fa,args.tgs_out)
         if call(tgs_cmd, shell=True):
             raise Exception('Parse tgs data error')
 

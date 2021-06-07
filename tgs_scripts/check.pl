@@ -1,4 +1,4 @@
-($segsin,$juncsin) = @ARGV;
+($segsin,$juncsin, $max_bias) = @ARGV;
 
 
 
@@ -30,15 +30,14 @@ while(<IN>){
                 $gap = $pos[$i]-$pos[$i-1];
                 $len = $len{$segs[$i]};
                 #print "$_\t$segs[$i]\tGAP$gap\tLEN$len\n";
-                if(abs($gap-$len) > 200){
+                if(abs($gap-$len) > $max_bias){
                         $bad = "$gap-$len";
                 }
         }
 
         if($bad == 0){
-                # print "$juncs\n"
+                print "$juncs\n"
         }else{
-                # print "BAD\t$bad\t$_\n";
-
+                print "BAD\t$bad\t$_\n";
         }
 }
