@@ -45,7 +45,7 @@ def dedup(sv):
     return sv[~sv.duplicated(sv.columns[:6], keep='last')]
 
 
-def segmentation(sv, chrom, start, end, id_start=1):
+def segmentation(sv, chrom, start=None, end=None, id_start=1):
     sv_5p = bpsmap.get_precise_sv(
         sv, chrom_5p=chrom, start_5p=start, end_5p=end)
     sv_3p = bpsmap.get_precise_sv(
@@ -54,10 +54,14 @@ def segmentation(sv, chrom, start, end, id_start=1):
 
     segs = []
     for p in bps[1:-1]:
+        if start == None:
+            start = p
+            continue
         segs.append((id_start, chrom, start, p))
         start = p
         id_start += 1
-    segs.append((id_start, chrom, start, end))
+    if end != None:
+        segs.append((id_start, chrom, start, end))
     return pd.DataFrame(segs, columns=['ID', 'chrom', 'start', 'end']), id_start + 1
 
 
@@ -128,10 +132,13 @@ def get_avg_depth(depth, chrom, start, end):
     return sum(map(lambda x: int(x.split('\t')[-1]), depth.fetch(chrom, start, end))) / (end - start + 1)
 
 
-def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v_chrom):
+def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploidy, purity, v_chrom):
     output = []
     total_depth = 0
     total_length = 0
+    min_support = 3
+    if is_targeted:
+        min_support = 1
     with open(filename, 'w') as fout:
         output_segs = []
         for seg in segs.itertuples():
@@ -139,22 +146,34 @@ def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v
             seg_depth = get_avg_depth(
                 depth_tabix, seg.chrom, seg.start, seg.end)
             total_depth += seg_depth * (seg.end - seg.start + 1)
-            output_segs.append(
-                f'SEG H:{seg.ID}:{seg.chrom}:{seg.start}:{seg.end} {seg_depth} -1')
+            output_segs.append(f'SEG H:{seg.ID}:{seg.chrom}:{seg.start}:{seg.end} {seg_depth} -1')
         ins_id = len(segs) + 1
         ins_segs = []
 
         output_juncs = []
         juncs_depth = []
         left = next(segs.itertuples())
+        all_supports = 0
+        finded_support_num = 0
+        added_right = []
         for right in segs.iloc[1:].itertuples():
             support = get_normal_junc_read_num(
                 bam, left.chrom, left.end, ext=ext)
-            if support > 5:
+            if support > min_support:
+                all_supports = all_supports + support
+                finded_support_num = finded_support_num + 1
                 juncs_depth.append(support)
                 output_juncs.append(
                     f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B')
+                added_right.append(right.ID)
             left = right
+        avg_support = all_supports / finded_support_num
+        # for right in segs.iloc[1:].itertuples():
+        #     print(added_right)
+        #     if right.ID not in added_right:
+        #         output_juncs.append(
+        #             f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B')
+        #     left = right
         for row in sv.itertuples():
             if row.strand_5p == '+':
                 if row.strand_3p == row.strand_5p:
@@ -207,7 +226,10 @@ def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v
         fout.write(f'AVG_PLOIDY {ploidy}\n')
         fout.write(f'PLOIDY {ploidy}m1\n')
         fout.write(f'SOURCE H:1\n')
-        fout.write(f'SINK H:{sink}\n')
+        if is_targeted:
+            fout.write(f'SINK H:{segs.iloc[-1].ID}\n')
+        else:
+            fout.write(f'SINK H:{sink}\n')
         fout.write('\n'.join(output_segs + output_juncs) + '\n')
 
     if len(ins_segs) > 0:
@@ -217,7 +239,7 @@ def generate_config(filename, sv, segs, depth_tabix, bam, ext, ploidy, purity, v
 
 def parse_chrom_info(chrom_info):
     a = re.split(r'([:-])', chrom_info)
-    return {'chrom': a[0], 'start': a[2], 'end': a[4]}
+    return {'chrom': a[0], 'start': int(a[2]), 'end': int(a[4])}
 
 def reverse_strand(strand):
     if strand == '+':
@@ -327,4 +349,10 @@ def get_integrate_chrom(sv_file, v_chrom, front_padding, back_padding):
             m_k=k
             m_v=res[k][0]
             # TODO max染色体的长度
-    return {'chrom': m_k, 'start': max(res[m_k][1] - front_padding, 1), 'end': max(res[m_k][2] + back_padding, 0)}
+    s = max(res[m_k][1], 1)
+    e = max(res[m_k][2], 0)
+    if front_padding:
+        s = max(res[m_k][1] - front_padding, 1)
+    if back_padding:
+        e = max(res[m_k][2] + back_padding, 0)
+    return {'chrom': m_k, 'start': s, 'end': e}

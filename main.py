@@ -1,5 +1,7 @@
 import argparse
 import sys, os
+import logging
+
 
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
@@ -75,19 +77,21 @@ class MainArgParser:
         parser.add_argument('--front_padding',
                             dest='front_padding',
                             required=False,
-                            default=500,
                             type=int,
                             help='Front padding, not work if h_chrom is provided')
         parser.add_argument('--back_padding',
                             dest='back_padding',
                             required=False,
-                            default=500,
                             type=int,
                             help='Back padding, not work if h_chrom is provided')
         parser.add_argument('--hic_sv',
                             dest='hic_sv',
                             required=False,
                             help='Sv file provide by hic breakfinder')
+        parser.add_argument('--u_span_reads',
+                            dest='u_span_reads',
+                            required=False,
+                            help='whether using span reads when calculate junction')
 
 
         args = parser.parse_args(sys.argv[2:])
@@ -100,12 +104,16 @@ class MainArgParser:
         out_seg = os.path.join(args.out_dir, args.sample_name+'.seg')
         out_junc = os.path.join(args.out_dir, args.sample_name+'.junc')
         out_lh = os.path.join(args.out_dir, args.sample_name+'.lh')
+        print(h_chrom_info)
 
         print('Reading SV')
         sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info, args.hic_sv)
         segs = pd.DataFrame()
         id_start = 1
+        print(h_chrom_info)
+        chrom_infos=[{'chrom': 'chr2', 'start': 205681990, 'end': 205798133}]
         for row in chrom_infos:
+            print(row)
             seg, id_start = generate_lh.segmentation(sv_sub, row['chrom'], int(row['start']), int(row['end']), id_start)
             segs = segs.append(seg)
 
@@ -120,7 +128,7 @@ class MainArgParser:
         generate_lh.write_junc_db(out_junc, junc_db)
 
         print('Generate lh file')
-        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'])
+        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'])
 
     def process_tgs(self):
         from subprocess import call
@@ -161,7 +169,36 @@ class MainArgParser:
         if call(tgs_cmd, shell=True):
             raise Exception('Parse tgs data error')
 
+    def process_hic(self):
+        import process_hic
 
+        parser = argparse.ArgumentParser(description='process HIC data')
+        parser.add_argument('-i', '--in_lh',
+                            dest='in_lh',
+                            required=True,
+                            help='input lh file')
+        parser.add_argument('--h_matrix',
+                            dest='h_matrix',
+                            required=True,
+                            help='input hic segement interation file')
+        parser.add_argument('-r', '--ref',
+                            dest='in_ref',
+                            required=False,
+                            help='input junction file')
+        parser.add_argument('-o', '--out_path',
+                            dest='out_path',
+                            required=True,
+                            help='out_path')
+        parser.add_argument('--samtools',
+                            dest='samtools',
+                            required=False,
+                            help='Samtools path')
+        args = parser.parse_args(sys.argv[2:])
+        out_matrix = os.path.join(args.out_path, "seg_hic.matrix")
+        # Segement to fa
+        # process_hic.parser_fa_from_lh(args.in_lh, args.samtools, args.out_path, args.in_ref)
+        # matrix normalize
+        process_hic.to_matrix(args.in_lh, args.h_matrix, out_matrix)
     def construct_hap(self):
         from subprocess import call
         import parseILP
@@ -194,14 +231,23 @@ class MainArgParser:
                             dest='tgs_junc',
                             required=False,
                             help='tgs junc file')
+        parser.add_argument('--is_targeted',
+                            dest='is_targeted',
+                            required=False,
+                            default=False,
+                            action='store_true',
+                            help='Is your data is targeted sequencing data')
 
         args = parser.parse_args(sys.argv[2:])
         # call cnv
         # generate lh
+        if not os.path.exists(args.out_dir):
+            os.mkdir(args.out_dir)
         f = os.path.join(args.out_dir, args.sample_name)
         # check
-        check_cmd = "{} check {} {} {}.checked.lh {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f,f)
+        check_cmd = "{} check {} {} {}.checked.lh {} {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f,f, args.is_targeted)
         cbc_cmd = "{} {}.lp solve solu {}.sol".format(args.cbc_path, f,f)
+        print(check_cmd)
         if call(check_cmd, shell=True):
             raise Exception("localhap check running error")
         if call(cbc_cmd, shell=True):
@@ -210,12 +256,12 @@ class MainArgParser:
         # parser ILP result
         parseILP.generate_balanced_lh(f+'.balance.lh', f+'.checked.lh', sol)
         # generate cycle and simple haps
-        # TODO 调整localhap参数
         solve_cmd = ""
         if args.tgs_junc:
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
         else:    
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
+        print(solve_cmd)
         if call(solve_cmd, shell=True):
             raise Exception("localhap solve running error")
 
