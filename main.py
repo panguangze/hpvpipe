@@ -1,5 +1,7 @@
 import argparse
 import sys, os
+import logging
+
 
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
@@ -163,9 +165,13 @@ class MainArgParser:
                             dest='in_lh',
                             required=True,
                             help='input lh file')
+        parser.add_argument('--h_matrix',
+                            dest='h_matrix',
+                            required=True,
+                            help='input hic segement interation file')
         parser.add_argument('-r', '--ref',
                             dest='in_ref',
-                            required=True,
+                            required=False,
                             help='input junction file')
         parser.add_argument('-o', '--out_path',
                             dest='out_path',
@@ -173,13 +179,14 @@ class MainArgParser:
                             help='out_path')
         parser.add_argument('--samtools',
                             dest='samtools',
-                            required=True,
+                            required=False,
                             help='Samtools path')
         args = parser.parse_args(sys.argv[2:])
-
+        out_matrix = os.path.join(args.out_path, "seg_hic.matrix")
         # Segement to fa
-        process_hic.parser_fa_from_lh(args.in_lh, args.samtools, args.out_path, args.in_ref)
-        # matrix
+        # process_hic.parser_fa_from_lh(args.in_lh, args.samtools, args.out_path, args.in_ref)
+        # matrix normalize
+        process_hic.to_matrix(args.in_lh, args.h_matrix, out_matrix)
     def construct_hap(self):
         from subprocess import call
         import parseILP

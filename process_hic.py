@@ -20,36 +20,36 @@ def parser_fa_from_lh(lh_file, samtools_path, out_file, ref):
             call(cmd2, shell=True)
 
 def normalize(lh_file, seg_matrix_file):
-    h_m = pd.read_csv(hic_file,header=None, sep='\t',index_col=False, names=['s1', 's2', 'contact_v']).astype({'s1':str,'s2': str, 'contact_v': np.int64})
-    id_copy = utils.parser_seg_info(lh_file)
+    h_m = pd.read_csv(seg_matrix_file,header=None, sep='\t',index_col=False, names=['s1', 's2', 'contact_v']).astype({'s1':str,'s2': str, 'contact_v': np.int64})
     seg_id = utils.seg2id(lh_file)
-    for row in h_m.itertuples():
+    res = []
+    # print(seg_id)
+    for index, row in h_m.iterrows():
         s1 = row["s1"].split(":")
-        s1 = row["s2"].split(":")
-        copy1 = id_copy[seg_id[s1]]
-        copy2 = id_copy[seg_id[s2]]
+        s2 = row["s2"].split(":")
         v = int(float(row["contact_v"]))
         l1 = int(s1[2]) - int(s1[1])
         l2 = int(s2[2]) - int(s2[1])
-        v = v/(l1+l2)*(copy1*copy2)
+        v = v/(l1+l2)
         row["contact_v"] = v
-        row["s1"] = l1
-        row["s2"] = l2
-    return h_m, len(seg_id)
+        row["s1"] = seg_id[row["s1"]]
+        row["s2"] = seg_id[row["s2"]]
+        res.append(row)
+    return res, len(seg_id)
 
 def to_matrix(lh_file, seg_matrix_file, out_matrix):
-    h_m, segs_len = normalize(lh_file, seg_matrix2id_matrix)
-    res=np.zeros([segs_len,segs_len])
-    f_in = open(lh_file)
-    for line in f_in:
-        line = line.strip()
-        a = line.split("\t")
-        id1 = int(a[0])
-        id2 = int(a[1])
-        v = int(float(a[2]))
-        res[id1-1][id2-1] = v
-    f_in.close()
-    with open('out_matrix') as f:
-    for line in res:
-        np.savetxt(f, line, fmt='%.2f')
-    return res
+    h_m, segs_len = normalize(lh_file, seg_matrix_file)
+    id_copy = utils.parser_seg_info(lh_file)
+    print(id_copy)
+    res=np.zeros([segs_len+1,segs_len])
+    for k in id_copy.keys():
+        res[0][int(k)-1] = id_copy[k]
+    for row in h_m:
+        id1 = int(row["s1"])
+        id2 = int(row["s2"])
+        v = float(row["contact_v"])
+        res[id1][id2-1] = v
+    pd.DataFrame(res).to_csv(out_matrix, index=None, header=None)
+    # return res
+
+# def generate_matrix():
