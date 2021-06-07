@@ -36,7 +36,8 @@ def seg2id(lh_file):
     return res
 
 # bwa
-# def bwa(bwa, ref, fq1, fq2, )
+def bwa_wgs(bwa, ref, fq1, fq2):
+
 
 def execmd(cmd):
     logging.INFO("cmd")
@@ -66,6 +67,7 @@ def svaba(threads, input_bam, out_dir, ref):
     # svaba run -p 64 -t srr32.sorted.markup.bam -a hpv2 -G ~/ref/hg38_hpv.fa -c 50000 -z
     prefix = os.path.join(out_dir,"svaba")
     cmd = "{} run -p {} -t {} -a {} -G {} -z".format(bin_config.svaba, threads, input_bam, prefix, ref)
+    execmd(cmd)
     out_sv = os.path.join(out_dir,"svaba.svaba.sv.sorted.vcf.gz")
     out_txt = os.path.join(out_dir,"svaba.sv.txt")
     with open(out_txt, 'w') as f:
