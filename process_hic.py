@@ -3,6 +3,7 @@ from subprocess import call
 import pandas as pd
 import numpy as np
 import utils
+import bins
 def parser_fa_from_lh(lh_file, samtools_path, out_file, ref):
     f = open(lh_file)
     # f_o = open(out_file, "w")
@@ -52,4 +53,17 @@ def to_matrix(lh_file, seg_matrix_file, out_matrix):
     pd.DataFrame(res).to_csv(out_matrix, index=None, header=None)
     # return res
 
+def bwa_hic(fq1, fq2, out_dir):
+    out_bam = os.path.join(out_dir, "hic.bam")
+    # bwa mem -t 64 $1 ${var}_R1.fastq.gz ${var}_R2.fastq.gz | samtools view -@ 48 -S -h -b -F 2316 > $var.bam
+    cmd1 = "{} mem -t {} {} {} {} | {} view -@ {} -S -h -b -F 2316 > {}".format(bins.bwa, bins.threads, bins.ref, fq1, fq2, bins.samtools, bins.threads, out_bam)
+    utils.execmd(cmd1)
+    return out_bam
+
+def counts(input_bam, out_dir):
+    out_counts = os.path.join(out_dir, "hic.counts")
+    # ~/apps/FALCON-Phase/bin/falcon-phase bam2 counts merged.sorted.bam merged.counts
+    cmd = "{} bam2 counts {} {}".format(bins.falcon, input_bam, out_counts)
+    utils.execmd(cmd)
+    return out_counts
 # def generate_matrix():
