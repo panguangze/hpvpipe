@@ -5,49 +5,24 @@ from inspect import getsourcefile
 from os.path import abspath
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
 import bins
-
-# process lh_file
-def parser_seg_info(lh_file):
-    res = {}
-    f_in = open(lh_file)
-    for line in f_in.readlines():
-        a = line.split(" ")
-        if a[0] == "SEG":
-            l = a[1].split(":")
-            res[l[1]] = a[3]
-    f_in.close()
-    return res
-
-def seg2id(lh_file):
-    res = {}
-    f_in = open(lh_file)
-    for line in f_in.readlines():
-        a = line.split(" ")
-        if a[0] == "SEG":
-            l = a[1].split(":")
-            res[l[2]+":"+l[3]+":"+l[4]] = l[1]
-    f_in.close()
-    # print(res)
-    return res
+from utils import execmd
 
 # bwa
-def bwa_wgs(ref, fq1, fq2, out_dir):
+def bwa_wgs(fq1, fq2, out_dir):
     # $bwa_bin mem -t 64 $ref $fq1 $fq2 | $samtools_bin view -bS -> $4
     out_bam = os.path.join(out_dir, "wgs.bam")
-    cmd = "{} mem -t {} {} {} {} | {} view -bS - > {}".format(bins.bwa, bins.threads, bins.ref, fq1, fq2, out_bam)
+	out_depth = os.path.join(out_dir, "wgs.bam.depth.gz")
+    cmd1 = "{} mem -t {} {} {} {} | {} view -bS - > {}".format(bins.bwa, bins.threads, bins.ref, fq1, fq2, out_bam)
+	# samtools depth -aa --reference ref_2_22_l1_real.fa L1.neo.new.bam | bgzip -c > ./L1_depth.gz && tabix -s 1 -b 2 -e 2 L1_depth.gz
+	cmd2 = "{} depth {} -aa --reference {} | {} -c > {} && {} -s -b 2 -e 2 {}".format(bins.samtools,bins.ref, out_bam, bins.bgzip, out_depth, bins.tabix, out_depth)
     execmd(cmd)
+	execmd(cmd2)
+	return out_bam, out_depth
 
-def execmd(cmd):
-    logging.INFO("cmd")
-    os.system(cmd)
-
-
-def seeksv(out_prefix, input_bam, ref):
+def seeksv(out_dir, fq1, fq2):
+	input_bam, out_depth = bwa_wgs(fq1, fq2, out_dir)
+	out_prefix = os.path.join(out_dir,"seeksv")
     # seeksv getclip -o /path/to/outputs/prefix input.bam
     cmd1 = "{} getclip -o {} {}".format(bins.seeksv, out_prefix, input_bam)
     #   bwa mem  /path/to/reference.fa /path/to/prefix.clip.fq.gz | \
@@ -66,10 +41,12 @@ def seeksv(out_prefix, input_bam, ref):
     execmd(cmd1)
     execmd(cmd2)
     execmd(cmd3)
-def svaba(input_bam, out_dir, ref):
+
+def svaba(out_dir, fq1, fq2):
+	input_bam, out_depth = bwa_wgs(fq1, fq2, out_dir)
     # svaba run -p 64 -t srr32.sorted.markup.bam -a hpv2 -G ~/ref/hg38_hpv.fa -c 50000 -z
     prefix = os.path.join(out_dir,"svaba")
-    cmd = "{} run -p {} -t {} -a {} -G {} -z".format(bins.svaba, bins.threads, input_bam, prefix, ref)
+    cmd = "{} run -p {} -t {} -a {} -G {} -z".format(bins.svaba, bins.threads, input_bam, prefix, bins.ref)
     execmd(cmd)
     out_sv = os.path.join(out_dir,"svaba.svaba.sv.sorted.vcf.gz")
     out_txt = os.path.join(out_dir,"svaba.sv.txt")
@@ -77,3 +54,5 @@ def svaba(input_bam, out_dir, ref):
         sv_records = sv.read_vcf(sv_fn, precise=False)
         for i, record in enumerate(sv_records):
             f.write(str(record) + '\n')
+
+	

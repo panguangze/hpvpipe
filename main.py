@@ -110,8 +110,6 @@ class MainArgParser:
         sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info, args.hic_sv)
         segs = pd.DataFrame()
         id_start = 1
-        print(h_chrom_info)
-        chrom_infos=[{'chrom': 'chr2', 'start': 205681990, 'end': 205798133}]
         for row in chrom_infos:
             print(row)
             seg, id_start = generate_lh.segmentation(sv_sub, row['chrom'], int(row['start']), int(row['end']), id_start)
@@ -168,6 +166,31 @@ class MainArgParser:
         tgs_cmd = "sh ./tgs_scripts/pipe.sh {} {} {} {} {} {}".format(args.lh_file,args.ref,args.tgs_fa,args.tgs_out)
         if call(tgs_cmd, shell=True):
             raise Exception('Parse tgs data error')
+
+    def process_wgs(self):
+        import process_wgs
+        parser = argparse.ArgumentParser(description='process wgs data')
+        parser.add_argument('--fq1',
+                            dest='fq1',
+                            required=True,
+                            help='input fq1 file')
+        parser.add_argument('--fq2',
+                            dest='fq2',
+                            required=True,
+                            help='input fq2 file')
+        parser.add_argument('--out_dir',
+                            required=True,
+                            help='input fq2 file')
+        parser.add_argument('--call_method',
+                            choices==['seeksv', 'svaba', 'delly'],
+                            required=True,
+                            help='sv detection method')
+        args = parser.parse_args(sys.argv[2:])
+
+        if args.call_method="seeksv":
+            process_wgs.seeksv(args.out_dir, args.fq1, args.fq2)
+        if args.call_method="svaba":
+            process_wgs.svaba(args.out_dir,args.fq1, args.fq2)
 
     def process_hic(self):
         import process_hic

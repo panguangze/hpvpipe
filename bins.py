@@ -1,0 +1,9 @@
+samtools="samtools"
+bcftools="bcftools"
+bwa="bwa"
+svaba="svaba"
+seeksv="seeksv"
+threads=64
+ref=""
+tabix=""
+bgzip=""
