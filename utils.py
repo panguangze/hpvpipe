@@ -33,4 +33,4 @@ def seg2id(lh_file):
 
 def execmd(cmd):
     logging.info(cmd)
-    # os.system(cmd)
+    os.system(cmd)
