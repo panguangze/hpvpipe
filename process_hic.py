@@ -53,10 +53,10 @@ def to_matrix(lh_file, seg_matrix_file, out_matrix):
     pd.DataFrame(res).to_csv(out_matrix, index=None, header=None)
     # return res
 
-def bwa_hic(fq1, fq2, out_dir):
+def bwa_hic(fq1, fq2,ref, out_dir):
     out_bam = os.path.join(out_dir, "hic.bam")
     # bwa mem -t 64 $1 ${var}_R1.fastq.gz ${var}_R2.fastq.gz | samtools view -@ 48 -S -h -b -F 2316 > $var.bam
-    cmd1 = "{} mem -t {} {} {} {} | {} view -@ {} -S -h -b -F 2316 > {}".format(bins.bwa, bins.threads, bins.ref, fq1, fq2, bins.samtools, bins.threads, out_bam)
+    cmd1 = "{} mem -t {} {} {} {} | {} view -@ {} -S -h -b -F 2316 > {}".format(bins.bwa, bins.threads, ref, fq1, fq2, bins.samtools, bins.threads, out_bam)
     utils.execmd(cmd1)
     return out_bam
 

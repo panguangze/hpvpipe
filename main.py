@@ -177,6 +177,10 @@ class MainArgParser:
                             dest='fq2',
                             required=True,
                             help='input fq2 file')
+        parser.add_argument('--ref',
+                            dest='ref',
+                            required=True,
+                            help='input fq2 file')
         parser.add_argument('--out_dir',
                             required=True,
                             help='input fq2 file')
@@ -190,12 +194,12 @@ class MainArgParser:
                             help='Only do bwa')
         args = parser.parse_args(sys.argv[2:])
         if args.bwa_only:
-            process_wgs.bwa_wgs(args.fq1, args.fq2, args.out_dir)
+            process_wgs.bwa_wgs(args.out_dir,args.fq1, args.fq2, args.ref)
             return
         if args.call_method=="seeksv":
-            process_wgs.seeksv(args.out_dir, args.fq1, args.fq2)
+            process_wgs.seeksv(args.out_dir, args.fq1, args.fq2, args.ref)
         if args.call_method=="svaba":
-            process_wgs.svaba(args.out_dir,args.fq1, args.fq2)
+            process_wgs.svaba(args.out_dir,args.fq1, args.fq2, args.ref)
 
     def process_hic(self):
         import process_hic
