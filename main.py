@@ -183,8 +183,15 @@ class MainArgParser:
         parser.add_argument('--call_method',
                             required=True,
                             help='sv detection method')
+        parser.add_argument('--bwa_only',
+                            required=False,
+                            action='store_false',
+                            default=False,
+                            help='Only do bwa')
         args = parser.parse_args(sys.argv[2:])
-
+        if args.bwa_only:
+            process_wgs.bwa_wgs(args.fq1, args.fq2, args.out_dir)
+            return
         if args.call_method=="seeksv":
             process_wgs.seeksv(args.out_dir, args.fq1, args.fq2)
         if args.call_method=="svaba":
