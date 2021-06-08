@@ -1,6 +1,5 @@
 import argparse
 import sys, os
-import logging
 
 
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -182,14 +181,13 @@ class MainArgParser:
                             required=True,
                             help='input fq2 file')
         parser.add_argument('--call_method',
-                            choices==['seeksv', 'svaba', 'delly'],
                             required=True,
                             help='sv detection method')
         args = parser.parse_args(sys.argv[2:])
 
-        if args.call_method="seeksv":
+        if args.call_method=="seeksv":
             process_wgs.seeksv(args.out_dir, args.fq1, args.fq2)
-        if args.call_method="svaba":
+        if args.call_method=="svaba":
             process_wgs.svaba(args.out_dir,args.fq1, args.fq2)
 
     def process_hic(self):

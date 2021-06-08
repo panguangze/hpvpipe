@@ -4,13 +4,9 @@ import os
 from inspect import getsourcefile
 from os.path import abspath
 import logging
-logging.basicConfig(level=logging.DEBUG)
-
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
 import bins
-
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')
 # process lh_file
 def parser_seg_info(lh_file):
     res = {}
@@ -36,5 +32,5 @@ def seg2id(lh_file):
     return res
 
 def execmd(cmd):
-    logging.INFO("cmd")
-    os.system(cmd)
+    logging.info(cmd)
+    # os.system(cmd)
