@@ -135,7 +135,7 @@ class MainArgParser:
         generate_lh.write_junc_db(out_junc, junc_db)
 
         print('Generate lh file')
-        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'],t_avg_depth=args.avg_depth is_seeksv=args.is_seeksv)
+        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'],t_avg_depth=args.avg_depth, is_seeksv=args.is_seeksv)
 
     def process_tgs(self):
         import process_tgs
