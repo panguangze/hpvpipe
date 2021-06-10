@@ -1,10 +1,11 @@
 import argparse
 import sys, os
 import utils
+import bins
 
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["OMP_NUM_THREADS"] = "1"
+# os.environ["MKL_NUM_THREADS"] = "1"
+# os.environ["NUMEXPR_NUM_THREADS"] = "1"
+# os.environ["OMP_NUM_THREADS"] = "1"
 
 class MainArgParser:
     def __init__(self):
@@ -38,10 +39,6 @@ class MainArgParser:
                             dest='sample_name',
                             required=True,
                             help='sample_name')
-        parser.add_argument('-d', '--depth-tabix',
-                            dest='depth_file',
-                            required=True,
-                            help='Tabixed depth for counting supports')
         parser.add_argument('--v_chrom',
                             dest='v_chrom',
                             required=True,
@@ -167,7 +164,7 @@ class MainArgParser:
         if not os.path.exists(args.out_dir):
             os.mkdir(args.out_dir)
         print('Parser tgs data')
-        tgs_cmd = "sh ./tgs_scripts/pipe.sh {} {} {} {} {} {}".format(args.lh_file,args.ref,args.tgs_fa,args.out_dir)
+        tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {}".format(bins.tgs_scripts, args.lh_file,args.ref,args.tgs_fa,args.out_dir, bins.tgs_scripts)
         exec(tgs_cmd)
 
     def process_wgs(self):
