@@ -160,14 +160,10 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
             support = get_normal_junc_read_num(
                 bam, left.chrom, left.end, ext=ext)
             if support > min_support:
-                all_supports = all_supports + support
-                finded_support_num = finded_support_num + 1
                 juncs_depth.append(support)
                 output_juncs.append(
                     f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B')
-                added_right.append(right.ID)
             left = right
-        avg_support = all_supports / finded_support_num
         # for right in segs.iloc[1:].itertuples():
         #     print(added_right)
         #     if right.ID not in added_right:
@@ -217,7 +213,7 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
 
         sink = ""
         for i in range(len(segs)):
-            if v_chrom in segs.iloc[i].chrom.lower() and i >= 1:
+            if v_chrom == segs.iloc[i].chrom and i >= 1:
                 sink = segs.iloc[i-1].ID
                 break
         fout.write(f'SAMPLE_NAME SAMPLE\n')

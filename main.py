@@ -145,7 +145,7 @@ class MainArgParser:
                             help='lh file')       
         parser.add_argument('-t','--tgs_fa',
                             dest='tgs_fa',
-                            required=False,
+                            required=True,
                             help='Three generation sequencing data in fasta format')
         parser.add_argument('-o','--out_dir',
                             dest='out_dir',
@@ -167,9 +167,9 @@ class MainArgParser:
         if not os.path.exists(args.out_dir):
             os.mkdir(args.out_dir)
         print('Parser tgs data')
-        t_lh = process_tgs.add_fake_lh(args.in_lh, args.out_dir)
-        tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {}".format(bins.tgs_scripts, t_lh ,args.ref,args.tgs_fa,args.out_dir, bins.tgs_scripts)
-        exec(tgs_cmd)
+        t_lh = process_tgs.add_fake_lh(args.lh_file, args.out_dir)
+        tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {}".format(bins.tgs_scripts, t_lh ,args.ref,args.tgs_fa,args.out_dir,args.junc_len, args.max_bias, bins.tgs_scripts)
+        utils.execmd(tgs_cmd)
 
     def process_wgs(self):
         import process_wgs
