@@ -97,6 +97,8 @@ class MainArgParser:
 
 
         args = parser.parse_args(sys.argv[2:])
+        utils.check_dir(args.out_dir)
+
         v_chrom_info = generate_lh.parse_chrom_info(args.v_chrom)
         h_chrom_info = ''
         if args.h_chrom:
@@ -194,6 +196,7 @@ class MainArgParser:
                             default=False,
                             help='Only do bwa')
         args = parser.parse_args(sys.argv[2:])
+        utils.check_dir(args.out_dir)
         if args.bwa_only:
             process_wgs.bwa_wgs(args.out_dir,args.fq1, args.fq2, args.ref)
             return
@@ -277,8 +280,7 @@ class MainArgParser:
         args = parser.parse_args(sys.argv[2:])
         # call cnv
         # generate lh
-        if not os.path.exists(args.out_dir):
-            os.mkdir(args.out_dir)
+        utils.check_dir(args.out_dir)
         f = os.path.join(args.out_dir, args.sample_name)
         # check
         check_cmd = "{} check {} {} {}.checked.lh {} {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f,f, args.is_targeted)

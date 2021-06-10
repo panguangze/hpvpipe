@@ -50,3 +50,7 @@ def gc_correction(input_bam, ref, effectiveGenomeSize):
     execmd(cmd3)
     execmd(cmd4)
     return corrected_bam
+
+def check_dir(dir):
+    if not os.path.exists(dir):
+        os.mkdir(dir)
