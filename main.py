@@ -1,6 +1,6 @@
 import argparse
 import sys, os
-
+import utils
 
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
@@ -134,7 +134,6 @@ class MainArgParser:
         generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'], is_seeksv=args.is_seeksv)
 
     def process_tgs(self):
-        from subprocess import call
         parser = argparse.ArgumentParser(description='Process tgs data')
         parser.add_argument('-r', '--ref',
                             dest='ref',
@@ -148,8 +147,8 @@ class MainArgParser:
                             dest='tgs_fa',
                             required=False,
                             help='Three generation sequencing data in fasta format')
-        parser.add_argument('-o','--tgs_out',
-                            dest='tgs_out',
+        parser.add_argument('-o','--out_dir',
+                            dest='out_dir',
                             required=True,
                             help='output path fro tgs file')
         parser.add_argument('--junc_len',
@@ -165,12 +164,11 @@ class MainArgParser:
                             type=int,
                             help='Max value of the distance between two junction point and the middle segment')
         args = parser.parse_args(sys.argv[2:])
-        if not os.path.exists(args.tgs_out):
-            os.mkdir(args.tgs_out)
+        if not os.path.exists(args.out_dir):
+            os.mkdir(args.out_dir)
         print('Parser tgs data')
-        tgs_cmd = "sh ./tgs_scripts/pipe.sh {} {} {} {} {} {}".format(args.lh_file,args.ref,args.tgs_fa,args.tgs_out)
-        if call(tgs_cmd, shell=True):
-            raise Exception('Parse tgs data error')
+        tgs_cmd = "sh ./tgs_scripts/pipe.sh {} {} {} {} {} {}".format(args.lh_file,args.ref,args.tgs_fa,args.out_dir)
+        exec(tgs_cmd)
 
     def process_wgs(self):
         import process_wgs
@@ -242,7 +240,6 @@ class MainArgParser:
         # matrix normalize
         process_hic.to_matrix(args.in_lh, hic_counts, args.out_dir)
     def construct_hap(self):
-        from subprocess import call
         import parseILP
         parser = argparse.ArgumentParser(description='process NGS WGS data')
         parser.add_argument('-i', '--in_lh',
@@ -289,10 +286,8 @@ class MainArgParser:
         # check
         check_cmd = "{} check {} {} {}.checked.lh {} {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f,f, args.is_targeted)
         cbc_cmd = "{} {}.lp solve solu {}.sol".format(args.cbc_path, f,f)
-        if call(check_cmd, shell=True):
-            raise Exception("localhap check running error")
-        if call(cbc_cmd, shell=True):
-            raise Exception("Cbc running error")
+        utils.execmd(check_cmd)
+        utils.execmd(cbc_cmd)
         sol = parseILP.parse_ilp_result(f+'.sol')
         # parser ILP result
         parseILP.generate_balanced_lh(f+'.balance.lh', f+'.checked.lh', sol)
@@ -302,8 +297,7 @@ class MainArgParser:
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
         else:    
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
-        if call(solve_cmd, shell=True):
-            raise Exception("localhap solve running error")
+        utils.execmd(solve_cmd)
 
 if __name__ == '__main__':
     MainArgParser()
