@@ -133,6 +133,7 @@ class MainArgParser:
         generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'], is_seeksv=args.is_seeksv)
 
     def process_tgs(self):
+        import process_tgs
         parser = argparse.ArgumentParser(description='Process tgs data')
         parser.add_argument('-r', '--ref',
                             dest='ref',
@@ -166,7 +167,8 @@ class MainArgParser:
         if not os.path.exists(args.out_dir):
             os.mkdir(args.out_dir)
         print('Parser tgs data')
-        tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {}".format(bins.tgs_scripts, args.lh_file,args.ref,args.tgs_fa,args.out_dir, bins.tgs_scripts)
+        t_lh = process_tgs.add_fake_lh(args.in_lh, args.out_dir)
+        tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {}".format(bins.tgs_scripts, t_lh ,args.ref,args.tgs_fa,args.out_dir, bins.tgs_scripts)
         exec(tgs_cmd)
 
     def process_wgs(self):
