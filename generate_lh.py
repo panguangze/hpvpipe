@@ -132,7 +132,7 @@ def get_avg_depth(depth, chrom, start, end):
     return sum(map(lambda x: int(x.split('\t')[-1]), depth.fetch(chrom, start, end))) / (end - start + 1)
 
 
-def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploidy, purity, v_chrom, is_seeksv=False):
+def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploidy, purity, v_chrom,t_avg_depth, is_seeksv=False):
     output = []
     total_depth = 0
     total_length = 0
@@ -217,8 +217,9 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
                 sink = segs.iloc[i-1].ID
                 break
         fout.write(f'SAMPLE_NAME SAMPLE\n')
-        fout.write(f'AVG_SEG_DP {total_depth * 1.0 / total_length}\n')
-        fout.write(f'AVG_JUNC_DP {np.mean(juncs_depth)}\n')
+        fout.write(f'AVG_SEG_DP {t_avg_depth}\n')
+        # fout.write(f'AVG_JUNC_DP {np.mean(juncs_depth)}\n')
+        fout.write(f'AVG_JUNC_DP {t_avg_depth}\n')
         fout.write(f'PURITY {purity}\n')
         fout.write(f'AVG_PLOIDY {ploidy}\n')
         fout.write(f'PLOIDY {ploidy}m1\n')
