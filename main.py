@@ -68,7 +68,6 @@ class MainArgParser:
         parser.add_argument('--avg_depth',
                             dest='avg_depth',
                             required=True,
-                            type=int,
                             help='avg_depth')
         parser.add_argument('--is_targeted',
                             dest='is_targeted',
