@@ -57,17 +57,17 @@ def segmentation(sv, chrom, start=None, end=None, id_start=1):
         if start == None:
             start = p
             continue
-        segs.append((id_start, chrom, start, p))
+        segs.append((chrom, start, p, id_start))
         start = p
         id_start += 1
     if end != None:
-        segs.append((id_start, chrom, start, end))
-    return pd.DataFrame(segs, columns=['ID', 'chrom', 'start', 'end']), id_start + 1
+        segs.append((chrom, start, end, id_start))
+    return pd.DataFrame(segs, columns=['chrom', 'start', 'end', 'ID']), id_start + 1
 
 
-def update_junc_db_by_sv(sv, junc_db):
+def update_junc_db_by_sv(sv, junc_db, is_seeksv=False):
     for row in sv.itertuples():
-        if row.inner_ins != '.':
+        if not is_seeksv and row.inner_ins != '.':
             continue
         idx1 = junc_db.loc[lambda r: r.chrom_5p == row.chrom_5p]\
                       .loc[lambda r: r.pos_5p == row.pos_5p]\
@@ -132,7 +132,7 @@ def get_avg_depth(depth, chrom, start, end):
     return sum(map(lambda x: int(x.split('\t')[-1]), depth.fetch(chrom, start, end))) / (end - start + 1)
 
 
-def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploidy, purity, v_chrom):
+def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploidy, purity, v_chrom, is_seeksv=False):
     output = []
     total_depth = 0
     total_length = 0
@@ -199,13 +199,7 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
                         .loc[lambda r: r.start == row.pos_3p]
 
             juncs_depth.append(row.junc_reads)
-            if row.inner_ins == '.':
-                j_r = 0
-                j_r = row.junc_reads
-                output_juncs.append(
-                    f'JUNC H:{left.ID.values[0]}:{row.strand_5p} H:{right.ID.values[0]}:{row.strand_3p} {j_r} -1 U B')
-
-            else:
+            if not is_seeksv and row.inner_ins != '.':
                 ins_segs.append(
                     (ins_id, f'Ins_{ins_id}', 1, len(row.inner_ins), row.inner_ins))
                 output_segs.append(
@@ -215,11 +209,18 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
                 output_juncs.append(
                     f'JUNC H:{ins_id}:+ H:{right.ID.values[0]}:{row.strand_3p} {row.junc_reads} -1 U B')
                 ins_id += 1
+            else:
+                j_r = 0
+                j_r = row.junc_reads
+                output_juncs.append(
+                    f'JUNC H:{left.ID.values[0]}:{row.strand_5p} H:{right.ID.values[0]}:{row.strand_3p} {j_r} -1 U B')
+
         sink = ""
         for i in range(len(segs)):
             if v_chrom in segs.iloc[i].chrom.lower() and i >= 1:
                 sink = segs.iloc[i-1].ID
                 break
+        fout.write(f'SAMPLE_NAME SAMPLE\n')
         fout.write(f'AVG_SEG_DP {total_depth * 1.0 / total_length}\n')
         fout.write(f'AVG_JUNC_DP {np.mean(juncs_depth)}\n')
         fout.write(f'PURITY {purity}\n')
@@ -284,9 +285,9 @@ def filter_by_hic(sv_sub, hic_sv, h_chrom, v_chrom):
                 pass
     return pd.DataFrame(res)
 
-def filter_sv(sv_file, h_chrom_info, v_chrom_info, hic_sv=None):
+def filter_sv(sv_file, h_chrom_info, v_chrom_info, hic_sv=None, is_seeksv=False):
     res = []
-    sv = bpsmap.read_sv(sv_file)
+    sv = bpsmap.read_sv(sv_file, is_seeksv)
     sv = dedup(sv)
     # h_chrom_info = parse_chrom_info(h_chrom)
     # v_chrom_info = parse_chrom_info(v_chrom)
@@ -306,26 +307,34 @@ def filter_sv(sv_file, h_chrom_info, v_chrom_info, hic_sv=None):
         res.append(row)
     return pd.DataFrame(res), [h_chrom_info, v_chrom_info]
 
-def get_integrate_chrom(sv_file, v_chrom, front_padding, back_padding):
+def get_integrate_chrom(sv_file, v_chrom, front_padding, back_padding, is_seeksv):
     sv = open(sv_file)
     res={}
     for line in sv.readlines():
+        if line.startswith("@"):
+            continue
         a = line.split('\t')
-        if a[0] == v_chrom and a[3] != v_chrom:
+        c1 = a[0]
+        c2 = a[3]
+        if is_seeksv:
+            c2 = a[4]
+            tmp_p = int(a[5])
+        else:
             tmp_p = int(a[4])
-            if a[3] in res.keys():
-                res[a[3]][0] = res[a[3]][0]+1
-                if tmp_p < res[a[3]][1]:
-                    res[a[3]][1] = tmp_p
-                if tmp_p > res[a[3]][2]:
-                    res[a[3]][2] = tmp_p
+        if c1 == v_chrom and c2 != v_chrom:
+            if c2 in res.keys():
+                res[c2][0] = res[c2][0]+1
+                if tmp_p < res[c2][1]:
+                    res[c2][1] = tmp_p
+                if tmp_p > res[c2][2]:
+                    res[c2][2] = tmp_p
             else:
-                res[a[3]] = []
-                res[a[3]].append(1)
-                res[a[3]].append(tmp_p)
-                res[a[3]].append(tmp_p)
+                res[c2] = []
+                res[c2].append(1)
+                res[c2].append(tmp_p)
+                res[c2].append(tmp_p)
         
-        if a[3] == v_chrom and a[0] != v_chrom:
+        if c2 == v_chrom and a[0] != v_chrom:
             tmp_p = int(a[1])
             if a[0] in res.keys():
                 res[a[0]][0] = res[a[0]][0]+1

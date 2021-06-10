@@ -16,6 +16,7 @@ class MainArgParser:
     def generate_lh(self):
         import bpsmap
         import generate_lh
+        import process_wgs
         import pysam
         import pandas as pd
         import numpy as np
@@ -91,6 +92,11 @@ class MainArgParser:
                             dest='u_span_reads',
                             required=False,
                             help='whether using span reads when calculate junction')
+        parser.add_argument('--is_seeksv',
+                            dest='is_seeksv',
+                            required=False,
+                            action='store_true',
+                            help='whether using span reads when calculate junction')
 
 
         args = parser.parse_args(sys.argv[2:])
@@ -99,33 +105,33 @@ class MainArgParser:
         if args.h_chrom:
             h_chrom_info=generate_lh.parse_chrom_info(args.h_chrom)
         else:
-            h_chrom_info = generate_lh.get_integrate_chrom(args.sv_file,v_chrom_info['chrom'],args.front_padding, args.back_padding)
+            h_chrom_info = generate_lh.get_integrate_chrom(args.sv_file,v_chrom_info['chrom'],args.front_padding, args.back_padding, args.is_seeksv)
         out_seg = os.path.join(args.out_dir, args.sample_name+'.seg')
         out_junc = os.path.join(args.out_dir, args.sample_name+'.junc')
         out_lh = os.path.join(args.out_dir, args.sample_name+'.lh')
-        print(h_chrom_info)
 
         print('Reading SV')
-        sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info, args.hic_sv)
+        sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info, args.hic_sv, args.is_seeksv)
         segs = pd.DataFrame()
         id_start = 1
         for row in chrom_infos:
-            print(row)
+            # print(row)
             seg, id_start = generate_lh.segmentation(sv_sub, row['chrom'], int(row['start']), int(row['end']), id_start)
             segs = segs.append(seg)
 
-        segs.to_csv(out_seg, index=False, sep='\t')
+        segs.to_csv(out_seg, index=False, sep='\t', header=False)
+        depth_file = process_wgs.depth(args.bam_file, out_seg, args.out_dir)
         bam = pysam.AlignmentFile(args.bam_file)
-        depth_tabix = pysam.TabixFile(args.depth_file)
+        depth_tabix = pysam.TabixFile(depth_file)
 
         print('Updating junc db')
         junc_db = pd.DataFrame(columns=['chrom_5p', 'pos_5p', 'strand_5p', 'chrom_3p', 'pos_3p', 'strand_3p', 'count'])
-        junc_db = generate_lh.update_junc_db_by_sv(sv_sub, junc_db)
+        junc_db = generate_lh.update_junc_db_by_sv(sv_sub, junc_db, args.is_seeksv)
         junc_db = generate_lh.update_junc_db_by_seg_in_chrom(segs, junc_db, bam, args.ext)
         generate_lh.write_junc_db(out_junc, junc_db)
 
         print('Generate lh file')
-        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'])
+        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'], is_seeksv=args.is_seeksv)
 
     def process_tgs(self):
         from subprocess import call
@@ -209,28 +215,32 @@ class MainArgParser:
                             dest='in_lh',
                             required=True,
                             help='input lh file')
-        parser.add_argument('--h_matrix',
-                            dest='h_matrix',
+        parser.add_argument('--fq1',
+                            dest='fq1',
                             required=True,
-                            help='input hic segement interation file')
+                            help='input lh file')
+        parser.add_argument('--fq2',
+                            dest='fq2',
+                            required=True,
+                            help='input lh file')
         parser.add_argument('-r', '--ref',
-                            dest='in_ref',
-                            required=False,
-                            help='input junction file')
-        parser.add_argument('-o', '--out_path',
-                            dest='out_path',
+                            dest='ref',
                             required=True,
-                            help='out_path')
-        parser.add_argument('--samtools',
-                            dest='samtools',
-                            required=False,
-                            help='Samtools path')
+                            help='input junction file')
+        parser.add_argument('-o', '--out_dir',
+                            dest='out_dir',
+                            required=True,
+                            help='out_dir')
         args = parser.parse_args(sys.argv[2:])
-        out_matrix = os.path.join(args.out_path, "seg_hic.matrix")
+        out_matrix = os.path.join(args.out_dir, "seg_hic.matrix")
         # Segement to fa
-        # process_hic.parser_fa_from_lh(args.in_lh, args.samtools, args.out_path, args.in_ref)
+        seg_fa, total_len = process_hic.parser_fa_from_lh(args.in_lh, args.out_dir, args.ref)
+        # bwa hic to fa
+        hic_bam = process_hic.bwa_hic(args.fq1, args.fq2, seg_fa, total_len, args.out_dir)
+        # bam to counts
+        hic_counts = process_hic.counts(hic_bam, args.out_dir)
         # matrix normalize
-        process_hic.to_matrix(args.in_lh, args.h_matrix, out_matrix)
+        process_hic.to_matrix(args.in_lh, hic_counts, args.out_dir)
     def construct_hap(self):
         from subprocess import call
         import parseILP
@@ -279,7 +289,6 @@ class MainArgParser:
         # check
         check_cmd = "{} check {} {} {}.checked.lh {} {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f,f, args.is_targeted)
         cbc_cmd = "{} {}.lp solve solu {}.sol".format(args.cbc_path, f,f)
-        print(check_cmd)
         if call(check_cmd, shell=True):
             raise Exception("localhap check running error")
         if call(cbc_cmd, shell=True):
@@ -293,7 +302,6 @@ class MainArgParser:
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
         else:    
             solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
-        print(solve_cmd)
         if call(solve_cmd, shell=True):
             raise Exception("localhap solve running error")
 

@@ -134,13 +134,20 @@ def concat_sv(sv_list_filename):
             df = df.append(read_sv(line[:-1]))
     return df
 
-def read_sv(file_name):
-    return pd.read_csv(file_name, header=None, sep='\t',
+def read_sv(file_name, is_seeksv=False):
+    if is_seeksv:
+        sv_df = pd.read_csv(file_name, skiprows=1, header=None,
+                            usecols=[0, 1, 2, 3, 4, 5, 6, 7],
+                            names=['chrom_5p', 'pos_5p', 'strand_5p', 'left_read',
+                                    'chrom_3p', 'pos_3p', 'strand_3p', 'right_read'],sep='\t')
+        sv_df["junc_reads"] = (sv_df["left_read"]+sv_df["right_read"])/2
+        return sv_df
+    else:
+        return pd.read_csv(file_name, header=None, sep='\t',
                           names=['chrom_5p', 'pos_5p', 'strand_5p',
                                  'chrom_3p', 'pos_3p', 'strand_3p',
                                  'inner_ins', 'span_reads', 'junc_reads',
                                  'id', 'qual', 'filter','group', 'meta_info', 'gene_5p', 'gene_3p'])
-
 
 def get_precise_sv(sv_df, chrom_5p=None, start_5p=None, end_5p=None,
                    chrom_3p=None, start_3p=None, end_3p=None,
