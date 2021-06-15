@@ -22,6 +22,8 @@ def parser_fa_from_lh(lh_file, out_dir, ref):
             # cmd2 = "{} faidx {} {}:{}-{} >> {}".format(samtools_path,ref,b[2],m,e, out_file)
             utils.execmd(cmd1)
             # utils.execmd(cmd2)
+    cmd2 = "{} index {}".format(bins.bwa, out_file)
+    utils.execmd(cmd2)
     return out_file, total_len
 
 def normalize(lh_file, hic_count_file):
