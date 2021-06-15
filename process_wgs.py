@@ -6,16 +6,20 @@ from os.path import abspath
 import bins
 from utils import execmd, gc_correction
 # bwa
-def bwa_wgs(out_dir,fq1, fq2, ref):
-    # $bwa_bin mem -t 64 $ref $fq1 $fq2 | $samtools_bin view -bS -> $4
-    out_bam = os.path.join(out_dir, "wgs.sorted.bam")
-    cmd1 = "{} mem -t {} {} {} {} | {} sort -O BAM -@ {} -o {} -".format(bins.bwa, bins.threads, ref, fq1, fq2,bins.samtools,bins.threads, out_bam)
-    cmd2 = "{} index {} -@ {}".format(bins.samtools, out_bam, bins.threads)
-    # samtools depth -aa --reference ref_2_22_l1_real.fa L1.neo.new.bam | bgzip -c > ./L1_depth.gz && tabix -s 1 -b 2 -e 2 L1_depth.gz
-    execmd(cmd1)
-    execmd(cmd2)
-    corrected_bam = gc_correction(out_bam, ref, bins.effectiveGenomeSize)
-    return corrected_bam
+def bwa_wgs(out_dir,fq1, fq2, ref, given_bam=None):
+    if given_bam:
+        corrected_bam = gc_correction(given_bam, ref, bins.effectiveGenomeSize)
+        return corrected_bam
+    else:
+        # $bwa_bin mem -t 64 $ref $fq1 $fq2 | $samtools_bin view -bS -> $4
+        out_bam = os.path.join(out_dir, "wgs.sorted.bam")
+        cmd1 = "{} mem -t {} {} {} {} | {} sort -O BAM -@ {} -o {} -".format(bins.bwa, bins.threads, ref, fq1, fq2,bins.samtools,bins.threads, out_bam)
+        cmd2 = "{} index {} -@ {}".format(bins.samtools, out_bam, bins.threads)
+        # samtools depth -aa --reference ref_2_22_l1_real.fa L1.neo.new.bam | bgzip -c > ./L1_depth.gz && tabix -s 1 -b 2 -e 2 L1_depth.gz
+        execmd(cmd1)
+        execmd(cmd2)
+        corrected_bam = gc_correction(out_bam, ref, bins.effectiveGenomeSize)
+        return corrected_bam
 
 def depth(input_bam, input_region, out_dir):
     out_depth=os.path.join(out_dir, "region.depth.gz")
@@ -24,8 +28,8 @@ def depth(input_bam, input_region, out_dir):
     return out_depth
 
 
-def seeksv(out_dir, fq1, fq2, ref):
-    input_bam = bwa_wgs(out_dir,fq1, fq2, ref)
+def seeksv(out_dir, fq1, fq2, ref, given_bam):
+    input_bam = bwa_wgs(out_dir,fq1, fq2, ref, given_bam)
     out_prefix = os.path.join(out_dir,"seeksv")
     # seeksv getclip -o /path/to/outputs/prefix input.bam
     cmd1 = "{} getclip -o {} {}".format(bins.seeksv, out_prefix, input_bam)
@@ -47,7 +51,7 @@ def seeksv(out_dir, fq1, fq2, ref):
     execmd(cmd3)
 
 def svaba(out_dir, fq1, fq2, ref):
-    input_bam = bwa_wgs(out_dir,fq1, fq2, ref)
+    input_bam = bwa_wgs(out_dir,fq1, fq2, ref, given_bam)
     # svaba run -p 64 -t srr32.sorted.markup.bam -a hpv2 -G ~/ref/hg38_hpv.fa -c 50000 -z
     prefix = os.path.join(out_dir,"svaba")
     cmd = "{} run -p {} -t {} -a {} -G {} -z".format(bins.svaba, bins.threads, input_bam, prefix, ref)

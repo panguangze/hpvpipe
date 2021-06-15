@@ -180,16 +180,20 @@ class MainArgParser:
         parser = argparse.ArgumentParser(description='process wgs data')
         parser.add_argument('--fq1',
                             dest='fq1',
-                            required=True,
+                            required=False,
                             help='input fq1 file')
         parser.add_argument('--fq2',
                             dest='fq2',
-                            required=True,
+                            required=False,
                             help='input fq2 file')
         parser.add_argument('--ref',
                             dest='ref',
                             required=True,
                             help='input fq2 file')
+        parser.add_argument('--given_bam',
+                            dest='given_bam',
+                            required=False,
+                            help='Sorted and index bam')
         parser.add_argument('--out_dir',
                             required=True,
                             help='input fq2 file')
@@ -204,12 +208,12 @@ class MainArgParser:
         args = parser.parse_args(sys.argv[2:])
         utils.check_dir(args.out_dir)
         if args.bwa_only:
-            process_wgs.bwa_wgs(args.out_dir,args.fq1, args.fq2, args.ref)
+            process_wgs.bwa_wgs(args.out_dir,args.fq1, args.fq2, args.ref, args.given_bam)
             return
         if args.call_method=="seeksv":
-            process_wgs.seeksv(args.out_dir, args.fq1, args.fq2, args.ref)
+            process_wgs.seeksv(args.out_dir, args.fq1, args.fq2, args.ref, args.given_bam)
         if args.call_method=="svaba":
-            process_wgs.svaba(args.out_dir,args.fq1, args.fq2, args.ref)
+            process_wgs.svaba(args.out_dir,args.fq1, args.fq2, args.ref, args.given_bam)
 
     def process_hic(self):
         import process_hic
