@@ -154,7 +154,7 @@ class MainArgParser:
         parser.add_argument('-o','--out_dir',
                             dest='out_dir',
                             required=True,
-                            help='output path fro tgs file')
+                            help='output path for tgs file')
         parser.add_argument('--junc_len',
                             dest='junc_len',
                             default=100,

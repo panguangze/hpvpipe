@@ -4,12 +4,8 @@ depth 文件： samtools depth -aa --reference ../../../gate_home/ref/hg38_hpv.f
 
 2.construct_hap： python main.py construct_hap -i test_files/svaba/test.lh -j test_files/svaba/test.junc -o test_files/svaba -s test --local_hap /home/caronkey/Documents/cityu/hpv/localHapHpv/cmake-build-debug/localHap --cbc cbc
 
-localhap:/home/tanbowen/workspace/LocalHap/debug/src/localhap
-cbc:/home/tanbowen/download/Cbc-2.9.9/build/Cbc/src/cbc
+3.process_tgs: python main.py process_tgs -r ~/remote/gate/ref/hg38_hpv.fa -l test_files/hela/hela.balance.lh -t /home/caronkey/Documents/cityu/hpv/tgs_fa/tgs.fa -o test_files/tgs
 
-TODO seeksv 支持 done
-TODO tgs 参数 done
-TODO 可视化环
-TODO hic筛选map	
-TODO check不过
+4.process_hic: python main.py process_hic -i test_files/hela/hela.lh --fq1 xx.f1 --fq2 xx.f2 --ref ref.fq -o test_files/hel
+
 
