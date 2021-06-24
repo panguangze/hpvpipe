@@ -2,7 +2,6 @@
 # $segs = "input.segs";
 ($fa,$segs,$juncs,$n) = @ARGV;
 open IN,$segs;
-<IN>;
 while(<IN>){
         chomp;
         @l = split /\t/;
@@ -13,7 +12,6 @@ open IN,$juncs;
 while(<IN>){
         chomp;
         ($s1,$s1d,$s2,$s2d) = split / /;
-
         @s1 = split /:|-/,$id_seg{$s1};
         @s2 = split /:|-/,$id_seg{$s2};
 

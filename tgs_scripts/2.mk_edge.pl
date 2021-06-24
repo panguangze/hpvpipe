@@ -1,6 +1,5 @@
-open IN,"filter_m8.0.8";
-open IN,$ARGV[0];
-$len = 2*$ARGV[1];
+open IN,@ARGV[0];
+$len = 2*@ARGV[1];
 $tr{'+'} = '-';$tr{'-'} = '+';
 while(<IN>){
 

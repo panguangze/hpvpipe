@@ -1,17 +1,11 @@
 ($segsin,$juncsin, $max_bias) = @ARGV;
-
-
-
 open LS,$segsin;
-<LS>;
 while(<LS>){
         chomp;
         @l = split /\t/;
         $len = $l[3] - $l[2];
         $len{$l[0]} = $len;
 }
-
-
 
 open IN,$juncsin;
 
@@ -20,7 +14,6 @@ $tr{'-'} = '+';$tr{'+'} = '-';
 while(<IN>){
         chomp;
         ($read,$juncs,$pos) = split /\t/;
-
         $tmp = $juncs;
         $tmp =~ s/[+|-]//g;
         @segs = split / /,$tmp;
