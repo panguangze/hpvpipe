@@ -1,3 +1,4 @@
+config the bin.py
 1.process_wgs: python main.py process_wgs --fq1 siha_fq1 --fq2 siha_fq2 --call_method seeksv --out_dir siha_out --ref ~/ref/hg38_hpv.fa
 
 2.generate_lh :python main.py generate_lh -f ~/remote/hela/out.s.sv.txt -b ~/remote/hela/h8_18.bam -o test_files/hela -s hela --v_chrom HPV18REF.1:1-7857 --ploidy 3 --purity 1 --is_seeksv -e 5
