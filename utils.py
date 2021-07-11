@@ -7,6 +7,10 @@ import logging
 import bins
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s: %(message)s')
+
+def check_dir(dir):
+    if not os.path.exists(dir):
+        os.mkdir(dir)
 # process lh_file
 def parser_seg_info(lh_file):
     res = {}
@@ -39,9 +43,12 @@ def execmd(cmd):
 def gc_correction(input_bam, ref, effectiveGenomeSize):
     corrected_bam = input_bam.replace(".bam", ".gccorrected.bam")
     # faToTwoBit hg38_hpv.fa hg38_hpv.bit
-    cmd1 = "{} {} {}.2bit".format(bins.faToTwoBit, ref, ref)
-    #  computeGCBias -b file.bam --effectiveGenomeSize 2150570000 -g mm9.2bit -l 200 --GCbiasFrequenciesFile freq.txt [options]
-    cmd2 = "{} -b {} --effectiveGenomeSize {} -g {}.2bit --GCbiasFrequenciesFile {}.freq.txt".format(bins.computeGCBias, input_bam, effectiveGenomeSize, ref, ref)
+    cmd1 = "echo 'skip ref faToTwoBit'"
+    cmd2 = "echo 'skip generate freq.txt'"
+    if not check_dir(ref+".freq.txt"):
+        cmd1 = "{} {} {}.2bit".format(bins.faToTwoBit, ref, ref)
+        #  computeGCBias -b file.bam --effectiveGenomeSize 2150570000 -g mm9.2bit -l 200 --GCbiasFrequenciesFile freq.txt [options]
+        cmd2 = "{} -b {} --effectiveGenomeSize {} -g {}.2bit --GCbiasFrequenciesFile {}.freq.txt".format(bins.computeGCBias, input_bam, effectiveGenomeSize, ref, ref)
     #  correctGCBias -b file.bam --effectiveGenomeSize 2150570000 -g mm9.2bit --GCbiasFrequenciesFile freq.txt -o gc_corrected.bam [options]
     cmd3 = "{} -b {} --effectiveGenomeSize {} -g {}.2bit --GCbiasFrequenciesFile {}.freq.txt -o {}".format(bins.correctGCBias, input_bam, effectiveGenomeSize, ref, ref, corrected_bam)
     cmd4 = "{} index {} -@ {}".format(bins.samtools, corrected_bam, bins.threads)
@@ -50,7 +57,3 @@ def gc_correction(input_bam, ref, effectiveGenomeSize):
     execmd(cmd3)
     execmd(cmd4)
     return corrected_bam
-
-def check_dir(dir):
-    if not os.path.exists(dir):
-        os.mkdir(dir)

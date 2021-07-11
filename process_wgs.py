@@ -50,6 +50,14 @@ def seeksv(out_dir, fq1, fq2, ref, given_bam):
     execmd(cmd2)
     execmd(cmd3)
 
+def surVirus(out_dir, bam, host_virus_ref, host_ref, virus_ref):
+    cmd = "{} {} {} {} {} {} {} --bwa {} --samtools {} --dust {} --threads {} --wgs".format(
+        bins.python,bins.surVirus,bam,out_dir,
+        host_ref,virus_ref,host_virus_ref,
+        bins.bwa,bins.samtools,bins.sdust,bins.threads
+    )
+    execmd(cmd)
+
 def svaba(out_dir, fq1, fq2, ref):
     input_bam = bwa_wgs(out_dir,fq1, fq2, ref, given_bam)
     # svaba run -p 64 -t srr32.sorted.markup.bam -a hpv2 -G ~/ref/hg38_hpv.fa -c 50000 -z
