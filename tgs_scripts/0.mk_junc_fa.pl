@@ -38,5 +38,5 @@ while(<IN>){
         $fa2 = `samtools faidx $fa $p2 $s2[0]:$t2_1-$t2_2|sed 1d`;
         $fa2 =~ s/\n//g;
 
-        print ">$s1$s1d\_$s2$s2d|$s1[0]:$t1_1-$t1_2\_$s2[0]:$t2_1-$t2_2\n$fa1$fa2\n";
+        print ">$s1$s1d\:$s2$s2d:$s1[0]:$t1_1-$t1_2\_$s2[0]:$t2_1-$t2_2\n$fa1$fa2\n";
 }
