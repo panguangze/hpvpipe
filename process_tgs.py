@@ -48,10 +48,10 @@ def parser_junc_fa_from_lh(lh_file, out_dir, ref):
             # utils.execmd(cmd2)
     return out_file, total_len
 def reverse(k):
-    m = k[0]
-    if k[1] == "-":
+    m = k[0:-1]
+    if k[-1] == "-":
         m = m+ "+"
-    if k[1] == "+":
+    if k[-1] == "+":
         m = m+ "-"
     return m
 
