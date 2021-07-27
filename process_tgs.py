@@ -119,7 +119,7 @@ def generate_tgs_order(m8,junc_len,out_dir,lh_file, max_bias):
                 prev_segs = segs
             prev_start_bp = bp
     for k,v in final_res.items():
-        tgs_out.write(k+" "+str(v)+"\n")
+        tgs_out.write(k+"\n")
 # segs_len = get_segs_lens("/home/caronkey/Documents/cityu/hpv/hpvpipe/test_files/tgs/tmp.lh")
 
 # if __name__ == "__main__":
