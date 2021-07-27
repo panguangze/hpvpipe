@@ -163,9 +163,9 @@ class MainArgParser:
                             help='Length of the junction point for blast')
         parser.add_argument('--max_bias',
                             dest='max_bias',
-                            default=200,
+                            default=0.15,
                             required=False,
-                            type=int,
+                            type=float,
                             help='Max value of the distance between two junction point and the middle segment')
         args = parser.parse_args(sys.argv[2:])
         if not os.path.exists(args.out_dir):
@@ -173,7 +173,9 @@ class MainArgParser:
         print('Parser tgs data')
         t_lh = process_tgs.add_fake_lh(args.lh_file, args.out_dir)
         tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {}".format(bins.tgs_scripts, t_lh ,args.ref,args.tgs_fa,args.out_dir,args.junc_len, args.max_bias, bins.tgs_scripts)
+        m8 = os.path.join(args.out_dir, "tgs.m8")
         utils.execmd(tgs_cmd)
+        process_tgs.generate_tgs_order(m8,args.junc_len,args.out_dir,args.lh_file,args.max_bias)
 
     def process_wgs(self):
         import process_wgs
@@ -214,7 +216,6 @@ class MainArgParser:
             process_wgs.seeksv(args.out_dir, args.fq1, args.fq2, args.ref, args.given_bam)
         if args.call_method=="svaba":
             process_wgs.svaba(args.out_dir,args.fq1, args.fq2, args.ref, args.given_bam)
-
     def process_hic(self):
         import process_hic
 
