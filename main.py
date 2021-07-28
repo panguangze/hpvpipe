@@ -6,7 +6,12 @@ import bins
 # os.environ["MKL_NUM_THREADS"] = "1"
 # os.environ["NUMEXPR_NUM_THREADS"] = "1"
 # os.environ["OMP_NUM_THREADS"] = "1"
-
+def g_out_files(out_dir,sample):
+    suffix = ["bed","depth","lh","junc","segs"]
+    res = {}
+    for i in suffix:
+        res[i] = os.path.join(out_dir, sample+"."+i)
+    return res
 class MainArgParser:
     def __init__(self):
         parser = argparse.ArgumentParser(prog='prelocalhap')
@@ -16,125 +21,200 @@ class MainArgParser:
 
     def generate_lh(self):
         import bpsmap
-        import generate_lh
-        import process_wgs
+        import config
         import pysam
         import pandas as pd
-        import numpy as np
         parser = argparse.ArgumentParser(description='Generate localhap config for each individual')
-        
-        parser.add_argument('-f', '--sv-file',
+        parser.add_argument('--sv_file',
                             dest='sv_file',
                             required=True,
                             help='Individual SV file')
-        parser.add_argument('-b', '--bam-file',
+        parser.add_argument('--bam',
                             dest='bam_file',
                             required=True,
                             help='Individual BAM file')
-        parser.add_argument('-o', '--out_dir',
-                            dest='out_dir',
+        parser.add_argument('--v_chr',
+                            dest='v_chr',
                             required=True,
-                            help='output dir')
-        parser.add_argument('-s', '--sample_name',
-                            dest='sample_name',
+                            help='Individual BAM file')
+        parser.add_argument('--h_chrs',
+                            dest='h_chrs',
                             required=True,
-                            help='sample_name')
-        parser.add_argument('--v_chrom',
-                            dest='v_chrom',
+                            help='Individual BAM file')
+        parser.add_argument('--v_len',
+                            dest='v_len',
+                            type=int,
                             required=True,
-                            help='Virus chrome')
-        parser.add_argument('--h_chrom',
-                            dest='h_chrom',
+                            help='Individual BAM file')
+        parser.add_argument('--seeksv',
+                            dest='is_seeksv',
                             required=False,
-                            help='Host chrome, if not provide, \
-                            we will search the main integration host chrom.')
-        parser.add_argument('-e', '--extension-bp',
+                            default=False,
+                            action='store_true',
+                            help='Whether seeksv results')
+        parser.add_argument('--sample',
+                            dest='sample',
+                            required=True,
+                            help='Sample name')
+        parser.add_argument('--ext_bp',
                             dest='ext',
                             required=True,
                             type=int,
                             help='Extended bp for normal junctions')
         parser.add_argument('--ploidy',
                             dest='ploidy',
-                            required=False,
+                            required=True,
                             default=2,
                             type=int,
-                            help='Ploidy')
+                            help='Extended bp for normal junctions')
         parser.add_argument('--purity',
                             dest='purity',
-                            required=False,
+                            required=True,
                             default=1,
                             type=int,
-                            help='Ploidy')
-        parser.add_argument('--avg_depth',
-                            dest='avg_depth',
+                            help='Extended bp for normal junctions')
+        parser.add_argument('--out_dir',
+                            dest='out_dir',
                             required=True,
-                            help='avg_depth')
-        parser.add_argument('--is_targeted',
-                            dest='is_targeted',
-                            required=False,
-                            default=False,
-                            action='store_true',
-                            help='Is your data is targeted sequencing data')
-        parser.add_argument('--front_padding',
-                            dest='front_padding',
-                            required=False,
-                            type=int,
-                            help='Front padding, not work if h_chrom is provided')
-        parser.add_argument('--back_padding',
-                            dest='back_padding',
-                            required=False,
-                            type=int,
-                            help='Back padding, not work if h_chrom is provided')
-        parser.add_argument('--hic_sv',
-                            dest='hic_sv',
-                            required=False,
-                            help='Sv file provide by hic breakfinder')
-        parser.add_argument('--u_span_reads',
-                            dest='u_span_reads',
-                            required=False,
-                            help='whether using span reads when calculate junction')
-        parser.add_argument('--is_seeksv',
-                            dest='is_seeksv',
-                            required=False,
-                            action='store_true',
-                            help='whether using span reads when calculate junction')
-
-
+                            help='Output path of config')
+        parser.add_argument('--avg_whole_dp',
+                            dest='avg_whole_dp',
+                            required=True,
+                            help='Output path of segment')
         args = parser.parse_args(sys.argv[2:])
         utils.check_dir(args.out_dir)
+        host_chrs = args.h_chrs.split(",")
+        print(host_chrs)
+        host_chrs.append(args.v_chr)
+        all_chrs = host_chrs
+        # all output files
+        out_files = g_out_files(args.out_dir,args.sample)
 
-        v_chrom_info = generate_lh.parse_chrom_info(args.v_chrom)
-        h_chrom_info = ''
-        if args.h_chrom:
-            h_chrom_info=generate_lh.parse_chrom_info(args.h_chrom)
-        else:
-            h_chrom_info = generate_lh.get_integrate_chrom(args.sv_file,v_chrom_info['chrom'],args.front_padding, args.back_padding, args.is_seeksv)
-        out_seg = os.path.join(args.out_dir, args.sample_name+'.seg')
-        out_junc = os.path.join(args.out_dir, args.sample_name+'.junc')
-        out_lh = os.path.join(args.out_dir, args.sample_name+'.lh')
+        # generate bps map
+        bps_map = bpsmap.generate_bps(args.sv_file,all_chrs,args.v_chr,args.v_len)
+        # generate depth bed
+        # bed_f,bam_f,depth_f,chromos,bs
+        # bpsmap.generate_depth_bed(out_files["bed"],args.bam_file,out_files["depth"],all_chrs,bps_map)
 
         print('Reading SV')
-        sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info, args.hic_sv, args.is_seeksv)
+        sv = pd.read_table(args.sv_file, skiprows=1, header=None,
+                            usecols=[0, 1, 2, 3, 4, 5, 6, 7],
+                            names=['chrom_5p', 'pos_5p', 'strand_5p', 'left_read',
+                                    'chrom_3p', 'pos_3p', 'strand_3p', 'right_read'])
+        config.map_bps_sv(sv, bps_map)
+        # config.map_bps_chrom_infos(chrom_infos, bps_map)
+        sv = config.dedup(sv)
+
         segs = pd.DataFrame()
         id_start = 1
-        for row in chrom_infos:
-            # print(row)
-            seg, id_start = generate_lh.segmentation(sv_sub, row['chrom'], int(row['start']), int(row['end']), id_start)
+        for chr in all_chrs:
+            seg, id_start = config.segmentation(sv, chr,args.v_chr,args.v_len, id_start)
             segs = segs.append(seg)
-
-        segs.to_csv(out_seg, index=False, sep='\t', header=False)
-        depth_file = process_wgs.depth(args.bam_file, out_seg, args.out_dir)
+        segs.to_csv(out_files["segs"], index=False, sep='\t')
         bam = pysam.AlignmentFile(args.bam_file)
-        depth_tabix = pysam.TabixFile(depth_file)
+        depth_tabix = pysam.TabixFile(out_files["depth"])
 
         print('Updating junc db')
         junc_db = pd.DataFrame(columns=['chrom_5p', 'pos_5p', 'strand_5p', 'chrom_3p', 'pos_3p', 'strand_3p', 'count'])
-        junc_db = generate_lh.update_junc_db_by_sv(sv_sub, junc_db, args.is_seeksv)
-        junc_db = generate_lh.update_junc_db_by_seg_in_chrom(segs, junc_db, bam, args.ext)
-        generate_lh.write_junc_db(out_junc, junc_db)
+        junc_db = config.update_junc_db_by_sv(sv, junc_db)
+        junc_db = config.update_junc_db_by_seg_in_chrom(segs, junc_db, bam, args.ext)
+        config.write_junc_db(out_files["junc"], junc_db)
 
-        print('Generate lh file')
-        generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'],t_avg_depth=args.avg_depth, is_seeksv=args.is_seeksv)
+        config.generate_config(out_files["lh"], args.sample, sv, segs, depth_tabix,bam,args.v_chr,args.avg_whole_dp, ext=args.ext,
+                               ploidy=args.ploidy)
+
+    # def generate_lh(self):
+    #     import bpsmap
+    #     import generate_lh
+    #     import process_wgs
+    #     import pysam
+    #     import pandas as pd
+    #     import numpy as np
+    #     parser = argparse.ArgumentParser(description='Generate localhap config for each individual')
+        
+    #     parser.add_argument('--sv-file',
+    #                         dest='sv_file',
+    #                         required=True,
+    #                         help='Individual SV file')
+    #     parser.add_argument('--bam-file',
+    #                         dest='bam_file',
+    #                         required=True,
+    #                         help='Individual BAM file')
+    #     parser.add_argument('--out_dir',
+    #                         dest='out_dir',
+    #                         required=True,
+    #                         help='output dir')
+    #     parser.add_argument('--v_chrom',
+    #                         dest='v_chrom',
+    #                         required=True,
+    #                         help='Virus chrome')
+    #     parser.add_argument('--h_chrom',
+    #                         dest='h_chrom',
+    #                         required=False,
+    #                         help='Host chrome, if not provide, \
+    #                         we will search the main integration host chrom.')
+    #     parser.add_argument('--e-bp',
+    #                         dest='ext',
+    #                         required=True,
+    #                         type=int,
+    #                         help='Extended bp for normal junctions')
+    #     parser.add_argument('--ploidy',
+    #                         dest='ploidy',
+    #                         required=False,
+    #                         default=2,
+    #                         type=int,
+    #                         help='Ploidy')
+    #     parser.add_argument('--purity',
+    #                         dest='purity',
+    #                         required=False,
+    #                         default=1,
+    #                         type=int,
+    #                         help='Ploidy')
+    #     parser.add_argument('--avg_depth',
+    #                         dest='avg_depth',
+    #                         required=True,
+    #                         help='avg_depth')
+    #     parser.add_argument('--padding',
+    #                         dest='padding',
+    #                         required=False,
+    #                         type=int,
+    #                         help='padding')
+    #     parser.add_argument('--is_seeksv',
+    #                         dest='is_seeksv',
+    #                         required=False,
+    #                         action='store_true',
+    #                         help='whether using span reads when calculate junction')
+
+    #     args = parser.parse_args(sys.argv[2:])
+    #     utils.check_dir(args.out_dir)
+    #     host_chroms = args.h_chrs.split(",")
+    #     bpsmap.generate_bps(args.sv_file,host_chroms,args.v_chr,args.v_len,args.out_dir)
+    #     out_seg = os.path.join(args.out_dir, args.sample_name+'.seg')
+    #     out_junc = os.path.join(args.out_dir, args.sample_name+'.junc')
+    #     out_lh = os.path.join(args.out_dir, args.sample_name+'.lh')
+
+    #     print('Reading SV')
+    #     sv_sub, chrom_infos = generate_lh.filter_sv(args.sv_file,h_chrom_info, v_chrom_info, args.hic_sv, args.is_seeksv)
+    #     segs = pd.DataFrame()
+    #     id_start = 1
+    #     for row in chrom_infos:
+    #         # print(row)
+    #         seg, id_start = generate_lh.segmentation(sv_sub, row['chrom'], int(row['start']), int(row['end']), id_start)
+    #         segs = segs.append(seg)
+
+    #     segs.to_csv(out_seg, index=False, sep='\t', header=False)
+    #     depth_file = process_wgs.depth(args.bam_file, out_seg, args.out_dir)
+    #     bam = pysam.AlignmentFile(args.bam_file)
+    #     depth_tabix = pysam.TabixFile(depth_file)
+
+    #     print('Updating junc db')
+    #     junc_db = pd.DataFrame(columns=['chrom_5p', 'pos_5p', 'strand_5p', 'chrom_3p', 'pos_3p', 'strand_3p', 'count'])
+    #     junc_db = generate_lh.update_junc_db_by_sv(sv_sub, junc_db, args.is_seeksv)
+    #     junc_db = generate_lh.update_junc_db_by_seg_in_chrom(segs, junc_db, bam, args.ext)
+    #     generate_lh.write_junc_db(out_junc, junc_db)
+
+    #     print('Generate lh file')
+    #     generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'],t_avg_depth=args.avg_depth, is_seeksv=args.is_seeksv)
 
     def process_tgs(self):
         import process_tgs
