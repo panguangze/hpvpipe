@@ -62,10 +62,10 @@ def segmentation(sv, chrom,v_chr,v_len, id_start=1):
     segs = []
     start = bps[0]
     for p in bps[1:]:
-        segs.append((id_start, chrom, start, p))
+        segs.append((chrom, start, p,id_start,0))
         start = p
         id_start += 1
-    return pd.DataFrame(segs, columns=['ID', 'chrom', 'start', 'end']), id_start
+    return pd.DataFrame(segs, columns=['chrom', 'start', 'end','ID','copy_origin']), id_start
 
 
 def update_junc_db_by_sv(sv, junc_db):
@@ -217,8 +217,8 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam,virus_chr, 
         sources = []
         sinks = []
         v_pos = ""
-        preseg = None
-        for seg in segs.itertuples():
+        preseg = pd.DataFrame()
+        for idx,seg in segs.iterrows():
             # print(f'Write seg {seg.ID}')
             if seg.chrom in total_host_length.keys():
                 total_host_length[seg.chrom] += seg.end - seg.start + 1
@@ -236,7 +236,8 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam,virus_chr, 
             #     total_host_length += seg.end - seg.start + 1
             #     seg_depth = get_avg_depth(depth_tabix, seg.chrom, seg.start, seg.end)
             #     total_host_depth += seg_depth * (seg.end - seg.start + 1)
-            if preseg == None:
+            # print(preseg,'xxx')
+            if preseg.empty:
                 sources.append(str(seg.ID))
                 preseg = seg
             else:
@@ -245,7 +246,6 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam,virus_chr, 
                     sinks.append(str(preseg.ID))
                 preseg = seg
             output_segs.append(f'SEG H:{seg.ID}:{seg.chrom}:{seg.start}:{seg.end} {seg_depth} -1')
-            # fout.write(f'SEG H:{seg.ID}:{seg.chrom}:{seg.start}:{seg.end} {get_avg_depth(depth_tabix, seg.chrom, seg.start, seg.end)} -1\n')
         sinks.append(str(len(segs)))
         ins_id = len(segs) + 1
         ins_segs = []

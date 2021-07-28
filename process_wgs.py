@@ -50,11 +50,12 @@ def seeksv(out_dir, fq1, fq2, ref, given_bam):
     execmd(cmd2)
     execmd(cmd3)
 
+# surVirus threads
 def surVirus(out_dir, bam, host_virus_ref, host_ref, virus_ref):
     cmd = "{} {} {} {} {} {} {} --bwa {} --samtools {} --dust {} --threads {} --wgs".format(
         bins.python,bins.surVirus,bam,out_dir,
         host_ref,virus_ref,host_virus_ref,
-        bins.bwa,bins.samtools,bins.sdust,bins.threads
+        bins.bwa,bins.samtools,bins.sdust,8
     )
     execmd(cmd)
 

@@ -216,6 +216,22 @@ class MainArgParser:
     #     print('Generate lh file')
     #     generate_lh.generate_config(out_lh, sv_sub, segs, depth_tabix, bam, args.is_targeted, ext=args.ext, ploidy=args.ploidy, purity=args.purity, v_chrom=v_chrom_info['chrom'],t_avg_depth=args.avg_depth, is_seeksv=args.is_seeksv)
 
+    def generate_visual(self):
+        import g_visual
+        parser = argparse.ArgumentParser(description='Process tgs data')
+        parser.add_argument('--hap_file',
+                            dest='hap_file',
+                            required=True,
+                            help='Reference')
+        parser.add_argument('--b_lh',
+                            dest='b_lh',
+                            required=True,
+                            help='lh file')
+        parser.add_argument('--out_dir',
+                            dest='out_dir',
+                            required=True,
+                            help='lh file')
+        g_visual.parse_hap(args.hap_file, args.b_lh, args.out_dir)
     def process_tgs(self):
         import process_tgs
         parser = argparse.ArgumentParser(description='Process tgs data')
