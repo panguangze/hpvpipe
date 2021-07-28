@@ -265,7 +265,7 @@ class MainArgParser:
                             help='Max value of the distance between two junction point and the middle segment')
         args = parser.parse_args(sys.argv[2:])
         if not os.path.exists(args.out_dir):
-            os.mkdir(args.out_dir)
+            os.makedirs(args.out_dir,exist_ok=True)
         print('Parser tgs data')
         t_lh = process_tgs.add_fake_lh(args.lh_file, args.out_dir)
         tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {}".format(bins.tgs_scripts, t_lh ,args.ref,args.tgs_fa,args.out_dir,args.junc_len, args.max_bias, bins.tgs_scripts)

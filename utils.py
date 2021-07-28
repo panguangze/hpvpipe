@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG,
 
 def check_dir(dir):
     if not os.path.exists(dir):
-        os.mkdir(dir)
+        os.makedirs(dir,,exist_ok=True)
 # process lh_file
 def parser_seg_info(lh_file):
     res = {}
