@@ -1,35 +1,9 @@
-# import sys
-# in_file = sys.argv[1]
-# sp = int(sys.argv[2])
-# f = open(in_file)
-# r = ""
-# for line in f.readlines():
-#     line = line.strip()
-#     if "pa" in line:
-#         continue
-#     a = line.split(" ")
-#     for i in a:
-#         t = ""
-#         if i[-1] =="+":
-#             t = i[0:-1]
-#             if int(t) <= sp:
-#                 t = "H"+t
-#             else:
-#                 t = "V"+t
-#         else:
-#             t = i[0:-1]
-#             if int(t) <= sp:
-#                 t = "r_H"+t
-#             else:
-#                 t = "r_V"+t
-#         r = r+t+","
-# print(r)
-
 import re
 import os
+import collections
 def split_r(hap,out_hap):
     out_f = open(out_hap, "w")
-    out_f.write('\t'.join(['#Parition','haplotype_NO','colour','contig_NO','repeat_time','regid_string']))
+    out_f.write('\t'.join(['#Parition','haplotype_NO','colour','contig_NO','repeat_time','regid_string'])+"\n")
     for k,v in hap.items():
         for h_num,path in enumerate(v):
             # print(path)
@@ -37,7 +11,7 @@ def split_r(hap,out_hap):
             count={}
             c=[]
             # print(path)
-            for n in path:
+            for n in path[1:]:
                 # print(n)
                 if not n in c:
                     c.append(n)
@@ -55,11 +29,11 @@ def split_r(hap,out_hap):
                     c=[n]
             contigs.append([','.join(c)+',','l'])
             for idx,c in enumerate(contigs):
+                print(k)
                 if c[1]=='l':
-                    
-                        out_f.write('\t'.join([k,str(h_num),'#ffffff',str(idx+1),'1',c[0]])+'\n')
+                        out_f.write('\t'.join([k,",".join([str(i) for i in range(0,int(path[0]))]),'#ffffff',str(idx+1),'1',c[0]])+'\n')
                 else:
-                        out_f.write('\t'.join([k,str(h_num),'#ffffff',str(idx+1),str(count[c[0]]),c[0]])+'\n')
+                        out_f.write('\t'.join([k,",".join([str(i) for i in range(0,int(path[0]))]),'#ffffff',str(idx+1),str(count[c[0]]),c[0]])+'\n')
 
 def parse_balance_lh(balanced_lh,out_seg):
     out_fin = open(out_seg, "w")
@@ -76,18 +50,22 @@ def parse_hap(hap_file,balanced_lh,out_dir):
     hap_in = open(hap_file)
     res = {}
     for line in hap_in.readlines():
-        line = line.strip()
+        line = line.strip("\n")
         info = line.split(":")
-        vs = []
-        for i in info[2].split(" "):
-            if "-" in i:
-                vs.append(i[0:-1]+"_r")
+        hap_count = collections.Counter(info[1:])
+        for hap,count in hap_count.items():
+            vs = []
+            vs.append(str(count))
+            for i in hap.split(" ")[:-1]:
+                if "-" in i:
+                    vs.append(i[0:-1]+"_r")
+                else:
+                    vs.append(i[0:-1])
+            if info[0] not in res.keys():
+                res[info[0]] = [vs]
             else:
-                vs.append(i[0:-1])
-        if info[0] not in res.keys():
-            res[info[0]] = [vs]
-        else:
-            res[info[0]].append(vs)
+                res[info[0]].append(vs)
+    print(res)
     out_seg = os.path.join(out_dir,"visual.seg")
     out_hap = os.path.join(out_dir,"visual.hap")
     split_r(res,out_hap)
