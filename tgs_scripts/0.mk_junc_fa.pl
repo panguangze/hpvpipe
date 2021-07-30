@@ -1,6 +1,6 @@
 # $fa = "orig_ref.fa";
 # $segs = "input.segs";
-($fa,$segs,$juncs,$n) = @ARGV;
+($fa,$segs,$juncs,$n,$samtools) = @ARGV;
 open IN,$segs;
 while(<IN>){
         chomp;
@@ -24,7 +24,7 @@ while(<IN>){
                 $t1_2 = $s1[1] + $n;
                 $p1 .= '-i';
         }
-        $fa1 = `samtools faidx $fa $p1 $s1[0]:$t1_1-$t1_2|sed 1d`;
+        $fa1 = `$samtools faidx $fa $p1 $s1[0]:$t1_1-$t1_2|sed 1d`;
         $fa1 =~ s/\n//g;
 
         if($s2d eq '+'){
@@ -35,7 +35,7 @@ while(<IN>){
                 $t2_2 = $s2[2];
                 $p2 .= '-i';
         }
-        $fa2 = `samtools faidx $fa $p2 $s2[0]:$t2_1-$t2_2|sed 1d`;
+        $fa2 = `$samtools faidx $fa $p2 $s2[0]:$t2_1-$t2_2|sed 1d`;
         $fa2 =~ s/\n//g;
 
         print ">$s1$s1d\:$s2$s2d:$s1[0]:$t1_1-$t1_2\_$s2[0]:$t2_1-$t2_2\n$fa1$fa2\n";

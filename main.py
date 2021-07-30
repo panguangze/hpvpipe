@@ -268,7 +268,7 @@ class MainArgParser:
             os.makedirs(args.out_dir,exist_ok=True)
         print('Parser tgs data')
         t_lh = process_tgs.add_fake_lh(args.lh_file, args.out_dir)
-        tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {}".format(bins.tgs_scripts, t_lh ,args.ref,args.tgs_fa,args.out_dir,args.junc_len, args.max_bias, bins.tgs_scripts)
+        tgs_cmd = "sh {}/pipe.sh {} {} {} {} {} {} {} {}".format(bins.tgs_scripts, t_lh ,args.ref,args.tgs_fa,args.out_dir,args.junc_len, args.max_bias, bins.tgs_scripts, bins.samtools)
         m8 = os.path.join(args.out_dir, "tgs.m8")
         utils.execmd(tgs_cmd)
         process_tgs.generate_tgs_order(m8,args.junc_len,args.out_dir,args.lh_file,args.max_bias)
