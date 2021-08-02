@@ -36,30 +36,31 @@ class MainArgParser:
         parser.add_argument('--v_chr',
                             dest='v_chr',
                             required=True,
-                            help='Individual BAM file')
+                            help='virus chr name')
         parser.add_argument('--h_chrs',
                             dest='h_chrs',
                             required=True,
-                            help='Individual BAM file')
+                            help='host chrs, if multi, split by "," eg, chr1,chr2')
         parser.add_argument('--v_len',
                             dest='v_len',
                             type=int,
                             required=True,
-                            help='Individual BAM file')
-        parser.add_argument('--seeksv',
-                            dest='is_seeksv',
-                            required=False,
-                            default=False,
-                            action='store_true',
-                            help='Whether seeksv results')
+                            help='virus chr len')
+        # parser.add_argument('--seeksv',
+        #                     dest='is_seeksv',
+        #                     required=False,
+        #                     default=False,
+        #                     action='store_true',
+        #                     help='Whether seeksv results')
         parser.add_argument('--sample',
                             dest='sample',
                             required=True,
                             help='Sample name')
         parser.add_argument('--ext_bp',
                             dest='ext',
-                            required=True,
+                            required=False,
                             type=int,
+                            default=5,
                             help='Extended bp for normal junctions')
         parser.add_argument('--ploidy',
                             dest='ploidy',
@@ -84,7 +85,7 @@ class MainArgParser:
         args = parser.parse_args(sys.argv[2:])
         utils.check_dir(args.out_dir)
         host_chrs = args.h_chrs.split(",")
-        print(host_chrs)
+        # print(host_chrs)
         host_chrs.append(args.v_chr)
         all_chrs = host_chrs
         # all output files
@@ -94,7 +95,7 @@ class MainArgParser:
         bps_map = bpsmap.generate_bps(args.sv_file,all_chrs,args.v_chr,args.v_len)
         # generate depth bed
         # bed_f,bam_f,depth_f,chromos,bs
-        # bpsmap.generate_depth_bed(out_files["bed"],args.bam_file,out_files["depth"],all_chrs,bps_map)
+        bpsmap.generate_depth_bed(out_files["bed"],args.bam_file,out_files["depth"],all_chrs,bps_map)
 
         print('Reading SV')
         sv = pd.read_table(args.sv_file, skiprows=1, header=None,
