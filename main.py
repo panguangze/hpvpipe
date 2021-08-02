@@ -72,7 +72,6 @@ class MainArgParser:
                             dest='purity',
                             required=True,
                             default=1,
-                            type=int,
                             help='Extended bp for normal junctions')
         parser.add_argument('--out_dir',
                             dest='out_dir',
