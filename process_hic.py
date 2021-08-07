@@ -70,8 +70,8 @@ def bwa_hic(fq1, fq2,ref, ref_len,out_dir):
     utils.execmd(cmd1)
     utils.execmd(cmd2)
     utils.execmd(cmd3)
-    gc_corrected_bam = utils.gc_correction(out_sorted_bam, ref, ref_len)
-    return gc_corrected_bam
+    # gc_corrected_bam = utils.gc_correction(out_sorted_bam, ref, ref_len)
+    return out_sorted_bam
 
 def counts(input_bam, out_dir):
     out_counts = os.path.join(out_dir, "hic.counts")
