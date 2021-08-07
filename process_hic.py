@@ -65,7 +65,7 @@ def bwa_hic(fq1, fq2,ref, ref_len,out_dir):
     out_sorted_bam = os.path.join(out_dir, "hic.sorted.bam")
     # bwa mem -t 64 $1 ${var}_R1.fastq.gz ${var}_R2.fastq.gz | samtools view -@ 48 -S -h -b -F 2316 > $var.bam
     cmd1 = "{} mem -t {} {} {} {} | {} view -@ {} -S -h -b -F 2316 > {}".format(bins.bwa, bins.threads, ref, fq1, fq2, bins.samtools, bins.threads, out_bam)
-    cmd2 = "{} sort -@ {} -O BAM -o {} {}".format(bins.samtools, bins.threads, out_sorted_bam, out_bam)
+    cmd2 = "{} sort -@ {} -O BAM -n -o {} {}".format(bins.samtools, bins.threads, out_sorted_bam, out_bam)
     cmd3 = "{} index -@ {} {}".format(bins.samtools, bins.threads, out_sorted_bam)
     utils.execmd(cmd1)
     utils.execmd(cmd2)
