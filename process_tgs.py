@@ -18,7 +18,7 @@ def add_fake_lh(in_lh, out_dir):
     for s in segs:
         out.write("JUNC H:"+s+":+ H:"+s+":+ 0 -1 U B\n")
         out.write("JUNC H:"+s+":+ H:"+s+":- 0 -1 U B\n")
-        out.write("JUNC H:"+s+":- H:"+s+":- 0 -1 U B\n")
+        # out.write("JUNC H:"+s+":- H:"+s+":- 0 -1 U B\n")
     in_lh.close()
     out.close()
     return tmp_lh
