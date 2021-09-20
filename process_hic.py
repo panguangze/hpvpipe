@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import utils
 import bins
+import re
+
 def parser_fa_from_lh(lh_file, out_dir, ref):
     out_file = os.path.join(out_dir, "segs.fa")
     total_len = 0
@@ -32,8 +34,10 @@ def normalize(lh_file, hic_count_file):
     res = []
     # print(seg_id)
     for index, row in h_m.iterrows():
-        s1 = row["s1"].split(":")
-        s2 = row["s2"].split(":")
+        s1 = re.split(r":|-",row["s1"])
+        s2 = re.split(r":|-",row["s2"])
+        # s1 = row["s1"].split(":")
+        # s2 = row["s2"].split(":")
         v = int(float(row["contact_v"]))
         l1 = int(s1[2]) - int(s1[1])
         l2 = int(s2[2]) - int(s2[1])
@@ -65,13 +69,13 @@ def bwa_hic(fq1, fq2,ref, ref_len,out_dir):
     out_sorted_bam = os.path.join(out_dir, "hic.sorted.bam")
     # bwa mem -t 64 $1 ${var}_R1.fastq.gz ${var}_R2.fastq.gz | samtools view -@ 48 -S -h -b -F 2316 > $var.bam
     cmd1 = "{} mem -t {} {} {} {} | {} view -@ {} -S -h -b -F 2316 > {}".format(bins.bwa, bins.threads, ref, fq1, fq2, bins.samtools, bins.threads, out_bam)
-    cmd2 = "{} sort -@ {} -O BAM -o {} {}".format(bins.samtools, bins.threads, out_sorted_bam, out_bam)
-    cmd3 = "{} index -@ {} {}".format(bins.samtools, bins.threads, out_sorted_bam)
+    cmd2 = "{} sort -@ {} -O BAM -n -o {} {}".format(bins.samtools, bins.threads, out_sorted_bam, out_bam)
+    # cmd3 = "{} index -@ {} {}".format(bins.samtools, bins.threads, out_sorted_bam)
     utils.execmd(cmd1)
     utils.execmd(cmd2)
-    utils.execmd(cmd3)
-    gc_corrected_bam = utils.gc_correction(out_sorted_bam, ref, ref_len)
-    return gc_corrected_bam
+    # utils.execmd(cmd3)
+    # gc_corrected_bam = utils.gc_correction(out_sorted_bam, ref, ref_len)
+    return out_sorted_bam
 
 def counts(input_bam, out_dir):
     out_counts = os.path.join(out_dir, "hic.counts")
