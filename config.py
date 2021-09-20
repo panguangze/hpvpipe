@@ -62,6 +62,9 @@ def segmentation(sv, chrom,v_chr,v_len, id_start=1):
     segs = []
     start = bps[0]
     for p in bps[1:]:
+        if p - start >= 10000:
+            start = p
+            continue
         segs.append((chrom, start, p,id_start,0))
         start = p
         id_start += 1
