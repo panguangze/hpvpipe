@@ -222,6 +222,8 @@ def get_breakpoints(sv_5p, sv_3p, is_virus):
     if not is_virus:
         svs.insert(0,svs[0]-1000)
         svs.append(svs[-1]+1000)
+    r = split_p_from_chr(svs)
+    return sum(r,[])
 # r = merge_near_pos(svs, 6)
     return svs
 
