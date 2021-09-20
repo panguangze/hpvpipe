@@ -220,8 +220,8 @@ def merge_near_pos(poses, threshold):
 def get_breakpoints(sv_5p, sv_3p, is_virus):
     svs = sorted(set(sv_5p.pos_5p).union(sv_3p.pos_3p))
     if not is_virus:
-        svs.insert(0,svs[0]-300)
-        svs.append(svs[-1]+300)
+        svs.insert(0,svs[0]-1000)
+        svs.append(svs[-1]+1000)
 # r = merge_near_pos(svs, 6)
     return svs
 
@@ -275,24 +275,29 @@ def split_p_from_chr(t):
     for item in t:
         if len(tmp) == 0:
             tmp.append(item)
-            continue
         else:
-            if item - tmp[-1] >= 10000:
+            if item - tmp[-1] >= 50000:
                 results.append(tmp)
                 tmp = []
+            tmp.append(item)
+    results.append(tmp)
     if len(results) == 1:
         return results
-    for i in range(0,len(results)-1):
+    f_r = []
+    print(results)
+    for i in range(0,len(results)):
         item = results[i]
         if i == 0:
-            item.append(item[-1] + 300)
+            item.append(item[-1] + 1000)
         elif i == len(results)-2:
-            item.append(item[0] - 300)
-            # item[0] = item[0] + 300
+            item.append(item[0] - 1000)
+            # item[0] = item[0] + 1000
         else:
-            item.append(item[-1] + 300)
-            item.append(item[0] - 300)
-    return results
+            item.append(item[-1] + 1000)
+            item.append(item[0] - 1000)
+        f_r.append(item)
+    # print(f_r)
+    return f_r
 
 def generate_depth_bed(bed_f,bam_f,depth_f,chromos,bs):
     # bps_map = [(chrom, *t) for t in bps_map]
