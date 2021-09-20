@@ -8,6 +8,25 @@ os.environ["NUMEXPR_NUM_THREADS"] = "1"
 os.environ["OMP_NUM_THREADS"] = "1"
 
 
+def parse_sur(file_name):
+    f_in = open(file_name)
+    res_list = []
+    for line in f_in.readlines():
+        infos = line.split(" ")
+        p5 = infos[1].split(":")
+        p3 = infos[2].split(":")
+        chrom_5p = p5[0]
+        strand_5p = p5[1][0]
+        pos_5p = int(p5[1][1:])
+
+        chrom_3p = p3[0]
+        strand_3p = p3[1][0]
+        pos_3p = int(p3[1][1:])
+        s_reads = infos[3].split("=")[1]
+        res_list.append([chrom_5p, pos_5p, strand_5p, chrom_3p, pos_3p, strand_3p, int(s_reads)])
+    return pd.DataFrame(res_list, columns=['chrom_5p', 'pos_5p', 'strand_5p',
+                                               'chrom_3p', 'pos_3p', 'strand_3p','junc_reads'])
+
 def map_bps_junc(junc, bps_map):
     for i in junc.index:
         junc.at[i, 'pos_5p'] = bps_map.loc[lambda df: df.chrom == junc.loc[i, 'chrom_5p']]\
@@ -303,6 +322,17 @@ def filter_sv(sv_file, h_chrom_info, v_chrom_info, hic_sv=None, is_seeksv=False)
             continue
         res.append(row)
     return pd.DataFrame(res), [h_chrom_info, v_chrom_info]
+
+# get the integration host chroms and split into partition
+def get_integrate_chroms(sv_file, v_chrom, front_padding, back_padding, is_seeksv):
+    sv = open(sv_file)
+    res={}
+    for line in sv.readlines():
+        if line.startswith("@"):
+            continue
+        a = line.split('\t')
+        c1 = a[0]
+        c2 = a[3]
 
 def get_integrate_chrom(sv_file, v_chrom, front_padding, back_padding, is_seeksv):
     sv = open(sv_file)

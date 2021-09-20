@@ -269,12 +269,39 @@ def map_bps(bps, r):
     return bps_map
 
 
+def split_p_from_chr(t):
+    results = []
+    tmp = []
+    for item in t:
+        if len(tmp) == 0:
+            tmp.append(item)
+            continue
+        else:
+            if item - tmp[-1] >= 10000:
+                results.append(tmp)
+                tmp = []
+    if len(results) == 1:
+        return results
+    for i in range(0,len(results)-1):
+        item = results[i]
+        if i == 0:
+            item.append(item[-1] + 300)
+        elif i == len(results)-2:
+            item.append(item[0] - 300)
+            # item[0] = item[0] + 300
+        else:
+            item.append(item[-1] + 300)
+            item.append(item[0] - 300)
+    return results
+
 def generate_depth_bed(bed_f,bam_f,depth_f,chromos,bs):
     # bps_map = [(chrom, *t) for t in bps_map]
     bed_out = open(bed_f,"w")
     for chr in chromos:
         t = bs[bs['chrom'] == chr]['after']
-        bed_out.write("{}\t{}\t{}\n".format(chr, min(t), max(t)))
+        tmp = split_p_from_chr(t)
+        for item in tmp:
+            bed_out.write("{}\t{}\t{}\n".format(chr, min(item), max(item)))
     bed_out.close()
     cmd = "{} depth -aa -b {} {} | {} -c > {} && {} -s 1 -b 2 -e 2 {}"\
         .format(bins.samtools,bed_f,bam_f,bins.bgzip,depth_f,bins.tabix,depth_f)
