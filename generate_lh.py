@@ -176,6 +176,8 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
         finded_support_num = 0
         added_right = []
         for right in segs.iloc[1:].itertuples():
+            print(right,"333")
+            print(left,"2222")
             if right.start - left.end != 0:
                 left = right
                 continue

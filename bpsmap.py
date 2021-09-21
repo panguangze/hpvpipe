@@ -234,7 +234,6 @@ def get_breakpoints_from_list(sv_list_filename, chrom, start, end, support_thres
     with open(sv_list_filename, 'r') as fin:
         for line in fin:
             sv_filename, depth_filename = line[:-1].split()
-            print(f'{n} {line}')
             n += 1
             sv = get_precise_sv(sv_filename, depth_filename, chrom, start, end, support_thres)
             bps_set = bps_set.union(get_breakpoints(sv))
@@ -286,7 +285,6 @@ def split_p_from_chr(t):
     if len(results) == 1:
         return results
     f_r = []
-    print(results)
     for i in range(0,len(results)):
         item = results[i]
         if i == 0:

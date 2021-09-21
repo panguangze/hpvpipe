@@ -304,9 +304,6 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam,virus_chr, 
 
             # print(row.inner_ins)
             if True or row.inner_ins == '.':
-                print(left,"left")
-                print(right, "right")
-                print(row)
                 # output_juncs.append(
                 #     f'JUNC H:{left.ID.values[0]}:{row.strand_5p} H:{right.ID.values[0]}:{row.strand_3p} {row.junc_reads} -1 U B')
                 output_juncs.append(

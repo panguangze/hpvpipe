@@ -33,7 +33,6 @@ def split_r(hap, out_hap):
                     c = [n]
             contigs.append([','.join(c)+',', 'l'])
             for idx, c in enumerate(contigs):
-                print(k)
                 if c[1] == 'l':
                     out_f.write('\t'.join([k, ",".join([str(i) for i in range(
                         0, int(path[0]))]), '#ffffff', str(idx+1), '1', c[0]])+'\n')
