@@ -220,8 +220,10 @@ def merge_near_pos(poses, threshold):
 def get_breakpoints(sv_5p, sv_3p, is_virus):
     svs = sorted(set(sv_5p.pos_5p).union(sv_3p.pos_3p))
     if not is_virus:
-        svs.insert(0,svs[0]-1000)
-        svs.append(svs[-1]+1000)
+        svs.insert(0,svs[0]-500)
+        svs.append(svs[-1]+500)
+    r = split_p_from_chr(svs)
+    return sum(r,[])
 # r = merge_near_pos(svs, 6)
     return svs
 
@@ -276,7 +278,7 @@ def split_p_from_chr(t):
         if len(tmp) == 0:
             tmp.append(item)
         else:
-            if item - tmp[-1] >= 50000:
+            if item - tmp[-1] >= 100000:
                 results.append(tmp)
                 tmp = []
             tmp.append(item)
@@ -288,13 +290,13 @@ def split_p_from_chr(t):
     for i in range(0,len(results)):
         item = results[i]
         if i == 0:
-            item.append(item[-1] + 1000)
+            item.append(item[-1] + 500)
         elif i == len(results)-2:
-            item.append(item[0] - 1000)
-            # item[0] = item[0] + 1000
+            item.append(item[0] - 500)
+            # item[0] = item[0] + 500
         else:
-            item.append(item[-1] + 1000)
-            item.append(item[0] - 1000)
+            item.append(item[-1] + 500)
+            item.append(item[0] - 500)
         f_r.append(item)
     # print(f_r)
     return f_r
