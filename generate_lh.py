@@ -176,7 +176,7 @@ def generate_config(filename, sv, segs, depth_tabix, bam,is_targeted, ext, ploid
         finded_support_num = 0
         added_right = []
         for right in segs.iloc[1:].itertuples():
-            if right.start - right.end != 0:
+            if right.start - left.end != 0:
                 left = right
                 continue
             support = get_normal_junc_read_num(
