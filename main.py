@@ -1,5 +1,7 @@
 import argparse
 import sys, os
+
+from numpy import fabs
 import utils
 import bins
 
@@ -37,7 +39,8 @@ class MainArgParser:
                             help='Individual BAM file')
         parser.add_argument('--v_chr',
                             dest='v_chr',
-                            required=True,
+                            required=False,
+                            default=None,
                             help='virus chr name')
         parser.add_argument('--h_chrs',
                             dest='h_chrs',
@@ -46,7 +49,8 @@ class MainArgParser:
         parser.add_argument('--v_len',
                             dest='v_len',
                             type=int,
-                            required=True,
+                            required=False,
+                            default=0,
                             help='virus chr len')
         # parser.add_argument('--seeksv',
         #                     dest='is_seeksv',
@@ -66,13 +70,13 @@ class MainArgParser:
                             help='Extended bp for normal junctions')
         parser.add_argument('--ploidy',
                             dest='ploidy',
-                            required=True,
+                            required=False,
                             default=2,
                             type=int,
                             help='Extended bp for normal junctions')
         parser.add_argument('--purity',
                             dest='purity',
-                            required=True,
+                            required=False,
                             default=1,
                             help='Extended bp for normal junctions')
         parser.add_argument('--out_dir',
@@ -81,8 +85,9 @@ class MainArgParser:
                             help='Output path of config')
         parser.add_argument('--avg_whole_dp',
                             dest='avg_whole_dp',
-                            required=True,
-                            help='Output path of segment')
+                            required=False,
+                            default=30,
+                            help='avg depth ')
         parser.add_argument('--given_depth',
                             dest='given_depth',
                             required=False,
