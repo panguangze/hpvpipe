@@ -329,7 +329,7 @@ def generate_bps(sv_file,all_chrs,v_chr,v_len):
         sv_5p = get_precise_sv(sv_df, chrom_5p=chrom)
         sv_3p = get_precise_sv(sv_df, chrom_3p=chrom)
         bps = ""
-        if chrom == v_chr:
+        if v_chr and chrom == v_chr:
             bps = get_breakpoints(sv_5p, sv_3p, True) + [1, int(v_len)]
         else:
             bps = get_breakpoints(sv_5p, sv_3p, False)

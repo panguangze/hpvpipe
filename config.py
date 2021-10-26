@@ -52,7 +52,7 @@ def dedup(sv):
 def segmentation(sv, chrom,v_chr,v_len, id_start=1):
     sv_5p = bpsmap.get_precise_sv(sv, chrom_5p=chrom)
     sv_3p = bpsmap.get_precise_sv(sv, chrom_3p=chrom)
-    if chrom == v_chr:
+    if v_chr and chrom == v_chr:
         bps = sorted(set(bpsmap.get_breakpoints(sv_5p, sv_3p, True) + [1, v_len]))
     else:
         bps = sorted(set(bpsmap.get_breakpoints(sv_5p, sv_3p, False)))

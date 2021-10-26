@@ -6,11 +6,13 @@ import bins
 # os.environ["MKL_NUM_THREADS"] = "1"
 # os.environ["NUMEXPR_NUM_THREADS"] = "1"
 # os.environ["OMP_NUM_THREADS"] = "1"
-def g_out_files(out_dir,sample):
+def g_out_files(out_dir,sample,given_depth):
     suffix = ["bed","depth","lh","junc","segs"]
     res = {}
     for i in suffix:
         res[i] = os.path.join(out_dir, sample+"."+i)
+    if given_depth:
+        res[i] = given_depth
     return res
 class MainArgParser:
     def __init__(self):
@@ -81,20 +83,27 @@ class MainArgParser:
                             dest='avg_whole_dp',
                             required=True,
                             help='Output path of segment')
+        parser.add_argument('--given_depth',
+                            dest='given_depth',
+                            required=False,
+                            default= None,
+                            help='Given depth')
         args = parser.parse_args(sys.argv[2:])
         utils.check_dir(args.out_dir)
         host_chrs = args.h_chrs.split(",")
         # print(host_chrs)
-        host_chrs.append(args.v_chr)
+        if args.v_chr:
+            host_chrs.append(args.v_chr)
         all_chrs = host_chrs
         # all output files
-        out_files = g_out_files(args.out_dir,args.sample)
+        out_files = g_out_files(args.out_dir,args.sample, args.given_depth)
 
         # generate bps map
         bps_map = bpsmap.generate_bps(args.sv_file,all_chrs,args.v_chr,args.v_len)
         # generate depth bed
         # bed_f,bam_f,depth_f,chromos,bs
-        bpsmap.generate_depth_bed(out_files["bed"],args.bam_file,out_files["depth"],all_chrs,bps_map)
+        if not args.given_depth:
+            bpsmap.generate_depth_bed(out_files["bed"],args.bam_file,out_files["depth"],all_chrs,bps_map)
 
         print('Reading SV')
         sv = pd.read_table(args.sv_file, skiprows=1, header=None,
@@ -111,7 +120,8 @@ class MainArgParser:
             seg, id_start = config.segmentation(sv, chr,args.v_chr,args.v_len, id_start)
             segs = segs.append(seg)
         segs.to_csv(out_files["segs"], index=False, sep='\t')
-        bam = pysam.AlignmentFile(args.bam_file)
+        if not args.given_depth:
+            bam = pysam.AlignmentFile(args.bam_file)
         depth_tabix = pysam.TabixFile(out_files["depth"])
 
         print('Updating junc db')
