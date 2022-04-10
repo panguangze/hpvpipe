@@ -32,12 +32,20 @@ def map_bps_chrom_infos(chrom_infos, bps_map):
 
 
 def map_bps_sv(sv, bps_map):
+    print(bps_map)
     for i in sv.index:
+        # print(bps_map)
+        # print(sv)
+        # print(bps_map.loc[lambda df: df.chrom == sv.loc[i, 'chrom_5p']])
+        # print(sv.loc[i, 'chrom_5p'])
+        # print(sv.loc[i, 'chrom_3p'])
         # print(bps_map.loc[lambda df: df.before == sv.loc[i, 'pos_5p']].after)
         t = bps_map.loc[lambda df: df.chrom == sv.loc[i, 'chrom_5p']].loc[lambda df: df.before == sv.loc[i, 'pos_5p']]
+
         sv.at[i, 'pos_5p'] = bps_map.loc[lambda df: df.chrom == sv.loc[i, 'chrom_5p']] \
             .loc[lambda df: df.before == sv.loc[i, 'pos_5p']] \
             .iloc[0].after
+        print(i)
         sv.at[i, 'pos_3p'] = bps_map.loc[lambda df: df.chrom == sv.loc[i, 'chrom_3p']] \
             .loc[lambda df: df.before == sv.loc[i, 'pos_3p']] \
             .iloc[0].after
@@ -61,8 +69,10 @@ def segmentation(sv, chrom,v_chr,v_len, id_start=1):
     # bps = list(sorted(set(bps)))
     segs = []
     start = bps[0]
+    print(start,"start")
     for p in bps[1:]:
-        if p - start >= 10000:
+        print(p,"xxxxx")
+        if v_chr and p - start >= 100000000:
             start = p
             continue
         segs.append((chrom, start, p,id_start,0))
@@ -267,6 +277,7 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam,virus_chr, 
                 output_juncs.append(f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B')
                 # fout.write(f'JUNC H:{left.ID}:+ H:{right.ID}:+ {support} -1 U B\n')
             left = right
+        
         for row in sv.itertuples():
             # # print(row)
             # if row.junc_reads <= 5:
@@ -304,6 +315,9 @@ def generate_config(filename, samplename, sv, segs, depth_tabix, bam,virus_chr, 
 
             # print(row.inner_ins)
             if True or row.inner_ins == '.':
+                print(left.ID,"left")
+                print(right.ID,"right")
+                print(row)
                 # output_juncs.append(
                 #     f'JUNC H:{left.ID.values[0]}:{row.strand_5p} H:{right.ID.values[0]}:{row.strand_3p} {row.junc_reads} -1 U B')
                 output_juncs.append(

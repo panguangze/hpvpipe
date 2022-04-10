@@ -14,7 +14,7 @@ def g_out_files(out_dir,sample,given_depth):
     for i in suffix:
         res[i] = os.path.join(out_dir, sample+"."+i)
     if given_depth:
-        res[i] = given_depth
+        res["depth"] = given_depth
     return res
 class MainArgParser:
     def __init__(self):
@@ -118,6 +118,7 @@ class MainArgParser:
         config.map_bps_sv(sv, bps_map)
         # config.map_bps_chrom_infos(chrom_infos, bps_map)
         sv = config.dedup(sv)
+        print(sv)
 
         segs = pd.DataFrame()
         id_start = 1
@@ -125,14 +126,15 @@ class MainArgParser:
             seg, id_start = config.segmentation(sv, chr,args.v_chr,args.v_len, id_start)
             segs = segs.append(seg)
         segs.to_csv(out_files["segs"], index=False, sep='\t')
-        if not args.given_depth:
-            bam = pysam.AlignmentFile(args.bam_file)
+        print(segs, "ddddddd")
+        # if not args.given_depth:
+        bam = pysam.AlignmentFile(args.bam_file)
         depth_tabix = pysam.TabixFile(out_files["depth"])
 
         print('Updating junc db')
         junc_db = pd.DataFrame(columns=['chrom_5p', 'pos_5p', 'strand_5p', 'chrom_3p', 'pos_3p', 'strand_3p', 'count'])
-        junc_db = config.update_junc_db_by_sv(sv, junc_db)
-        junc_db = config.update_junc_db_by_seg_in_chrom(segs, junc_db, bam, args.ext)
+        # junc_db = config.update_junc_db_by_sv(sv, junc_db)
+        # junc_db = config.update_junc_db_by_seg_in_chrom(segs, junc_db, bam, args.ext)
         config.write_junc_db(out_files["junc"], junc_db)
 
         config.generate_config(out_files["lh"], args.sample, sv, segs, depth_tabix,bam,args.v_chr,args.avg_whole_dp, ext=args.ext,

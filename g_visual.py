@@ -4,10 +4,10 @@ import collections
 import argparse
 
 
-def split_r(hap, out_hap):
+def split_r(hap, out_hap, sample):
     out_f = open(out_hap, "w")
-    out_f.write('\t'.join(['#Parition', 'haplotype_NO', 'colour',
-                'contig_NO', 'repeat_time', 'regid_string'])+"\n")
+    out_f.write('\t'.join(['sampleId','Partition', 'HaplotypeNo', 'colour',
+                'contigNo', 'repeatTime', 'regidString'])+"\n")
     for k, v in hap.items():
         for h_num, path in enumerate(v):
             # print(path)
@@ -34,27 +34,30 @@ def split_r(hap, out_hap):
             contigs.append([','.join(c)+',', 'l'])
             for idx, c in enumerate(contigs):
                 if c[1] == 'l':
-                    out_f.write('\t'.join([k, ",".join([str(i) for i in range(
+                    out_f.write('\t'.join([sample,k, ",".join([str(i) for i in range(
                         0, int(path[0]))]), '#ffffff', str(idx+1), '1', c[0]])+'\n')
                 else:
-                    out_f.write('\t'.join([k, ",".join([str(i) for i in range(
+                    out_f.write('\t'.join([sample,k, ",".join([str(i) for i in range(
                         0, int(path[0]))]), '#ffffff', str(idx+1), str(count[c[0]]), c[0]])+'\n')
 
 
-def parse_balance_lh(balanced_lh, out_seg):
+def parse_balance_lh(balanced_lh, out_seg, sample):
     out_fin = open(out_seg, "w")
-    out_fin.write('chrom\tstart\tend\tid\tcopy_origin\tcopy_balanced\n')
+    out_fin.write('sampleId\tsegType\trefSeg\tleftPos\trightPos\tsegId\tcopy_origin\tcopy_balanced\tpartition\n')
     b_in = open(balanced_lh)
     for line in b_in.readlines():
         if "SEG " in line:
             line = line.strip()
             line = line.split(" ")
             a = line[1].split(":")
-            out_fin.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(
-                a[2], a[3], a[4], a[1], line[3], line[-1]))
+            seg_type = "virus"
+            if "chr" in a[2]:
+                seg_type="host"
+            out_fin.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(sample,seg_type,
+                a[2], a[3], a[4], a[1], line[3], line[-1], "1"))
 
 
-def parse_hap(hap_file, balanced_lh, out_dir):
+def parse_hap(hap_file, balanced_lh, out_dir, sample):
     hap_in = open(hap_file)
     res = {}
     for line in hap_in.readlines():
@@ -76,8 +79,8 @@ def parse_hap(hap_file, balanced_lh, out_dir):
     print(res)
     out_seg = os.path.join(out_dir, "visual.seg")
     out_hap = os.path.join(out_dir, "visual.hap")
-    split_r(res, out_hap)
-    parse_balance_lh(balanced_lh, out_seg)
+    split_r(res, out_hap, sample)
+    parse_balance_lh(balanced_lh, out_seg, sample)
 
 
 def main():
@@ -91,12 +94,16 @@ def main():
                         dest='balanced_lh',
                         required=True,
                         help='balanced_lh file')
+    parser.add_argument('--sample',
+                        dest='sample',
+                        required=True,
+                        help='sample name')
     parser.add_argument('--out_file',
                         dest='out_file',
                         required=True,
                         help='out file')
     args = parser.parse_args()
-    parse_hap(args.hap_file, args.balanced_lh, args.out_file)
+    parse_hap(args.hap_file, args.balanced_lh, args.out_file, args.sample)
 
 if __name__ == "__main__":
     main()

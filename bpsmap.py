@@ -219,11 +219,18 @@ def merge_near_pos(poses, threshold):
 
 def get_breakpoints(sv_5p, sv_3p, is_virus):
     svs = sorted(set(sv_5p.pos_5p).union(sv_3p.pos_3p))
-    if not is_virus:
-        svs.insert(0,svs[0]-500)
-        svs.append(svs[-1]+500)
-    r = split_p_from_chr(svs)
-    return sum(r,[])
+    print(svs)
+    # if not is_virus:
+    #     svs.insert(0,svs[0]-500)
+    #     svs.append(svs[-1]+500)
+    if is_virus:
+        r = split_p_from_chr(svs)
+        return sum(r,[])
+    else:
+        if svs[0] > 1000:
+            svs.insert(0,svs[0]-1000)
+        svs.append(svs[-1]+1000)
+        return svs
 # r = merge_near_pos(svs, 6)
     return svs
 
@@ -249,7 +256,7 @@ def count_neighbor(arr, r=20):
 def map_bps(bps, r):
     bps_rs = bps.reshape(-1, 1)
     kdt = KDTree(bps_rs)
-    ns = kdt.query_radius(bps_rs, r=10)
+    ns = kdt.query_radius(bps_rs, r=r)
 
     inters = []
     inter = set(ns[0])
@@ -335,6 +342,7 @@ def generate_bps(sv_file,all_chrs,v_chr,v_len):
             bps = get_breakpoints(sv_5p, sv_3p, False)
         bps = np.array(sorted(set(bps)))
         bps_map.extend([(chrom, *t) for t in map_bps(bps, 10)])
+    print(bps_map)
     bs = pd.DataFrame(bps_map, columns=['chrom', 'before', 'after']) \
         .sort_values(by=['chrom', 'before'])
     return bs
