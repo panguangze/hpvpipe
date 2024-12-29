@@ -407,7 +407,7 @@ class MainArgParser:
         utils.check_dir(args.out_dir)
         f = os.path.join(args.out_dir, args.sample_name)
         # check
-        check_cmd = "{} check {} {} {}.checked.lh {} {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f,f, args.is_targeted)
+        check_cmd = "{} --op check --in_lh {} --juncdb {} --out_lh {}.checked.lh --lp_prefix {} --verbose".format(args.local_hap,args.in_junc, args.in_lh,f)
         cbc_cmd = "{} {}.lp solve solu {}.sol".format(args.cbc_path, f,f)
         utils.execmd(check_cmd)
         utils.execmd(cbc_cmd)
@@ -417,9 +417,10 @@ class MainArgParser:
         # generate cycle and simple haps
         solve_cmd = ""
         if args.tgs_junc:
-            solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
-        else:    
-            solve_cmd = "{} solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
+            solve_cmd = "{} --op solve --in_lh {}.balance.lh --circuits {}.circuits --hap {}.haps --traversed {}.traversed --verbose".format(args.local_hap,f,f,f)
+        else:
+            solve_cmd = "{} --op solve --in_lh {}.balance.lh --circuits {}.circuits --hap {}.haps --traversed {}.traversed --verbose".format(args.local_hap,f,f,f)
+            #solve_cmd = "{} -op solve {} {}.balance.lh {}.circuits {}.haps --verbose".format(args.local_hap,args.in_junc,f,f,f)
         utils.execmd(solve_cmd)
 
 if __name__ == '__main__':
